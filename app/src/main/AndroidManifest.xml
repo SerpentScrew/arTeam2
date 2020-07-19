@@ -10,15 +10,15 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
-            android:name=".SplashActivity"
+            android:name=".Activity.SplashActivity"
             android:screenOrientation="portrait"
             android:theme="@style/SplashTheme" />
 
         <activity
-            android:name=".MeasureActivity"
+            android:name=".Activity.MeasureActivity"
             android:screenOrientation="locked" />
         <activity
-            android:name=".MainActivity"
+            android:name=".Activity.MainActivity"
             android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

@@ -1,9 +1,11 @@
-package com.example.arteam2;
+package com.example.arteam2.Activity;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
 import android.view.WindowManager;
+
+import com.example.arteam2.R;
 
 public class MainActivity extends AppCompatActivity {
 	

@@ -1,10 +1,12 @@
-package com.example.arteam2;
+package com.example.arteam2.Activity;
 
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 
 import androidx.annotation.Nullable;
+
+import com.example.arteam2.Activity.MainActivity;
 
 public class SplashActivity extends Activity {
 
@@ -17,7 +19,7 @@ public class SplashActivity extends Activity {
         }catch(InterruptedException e){
             e.printStackTrace();
         }
-        startActivity(new Intent(this,MainActivity.class));
+        startActivity(new Intent(this, MainActivity.class));
         finish();
     }
 }
