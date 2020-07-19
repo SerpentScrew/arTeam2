@@ -1,4 +1,4 @@
-package com.example.arteam2;
+package com.example.arteam2.Renderer;
 
 import android.opengl.GLSurfaceView;
 

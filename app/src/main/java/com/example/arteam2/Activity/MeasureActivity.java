@@ -1,10 +1,12 @@
-package com.example.arteam2;
+package com.example.arteam2.Activity;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 
+import com.example.arteam2.Renderer.MeasureRenderer;
+import com.example.arteam2.R;
 import com.google.ar.core.Session;
 
 public class MeasureActivity extends AppCompatActivity {
