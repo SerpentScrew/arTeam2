@@ -19,6 +19,7 @@ public class PermissionUtility {
 					activity,
 					new String[]{Manifest.permission.CAMERA},
 					0);
+			System.out.println("ASDf");
 		}
 	}
 }
