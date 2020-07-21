@@ -21,6 +21,7 @@ import android.opengl.GLSurfaceView;
 
 import androidx.annotation.NonNull;
 
+import com.example.arteam2.Renderer.Shader.GLSupport;
 import com.example.arteam2.Utility.ShaderUtil;
 import com.google.ar.core.Coordinates2d;
 import com.google.ar.core.Frame;
@@ -38,8 +39,8 @@ public class BackgroundRenderer {
 	private static final String TAG = BackgroundRenderer.class.getSimpleName();
 	
 	// Shader names.
-	private static final String VERTEX_SHADER_NAME = "screenquad.vert";
-	private static final String FRAGMENT_SHADER_NAME = "screenquad.frag";
+	private static final String VERTEX_SHADER_PATH = "screenquad.vert";
+	private static final String FRAGMENT_SHADER_PATH = "screenquad.frag";
 	
 	private static final int COORDS_PER_VERTEX = 2;
 	private static final int TEXCOORDS_PER_VERTEX = 2;
@@ -105,17 +106,20 @@ public class BackgroundRenderer {
 				ByteBuffer.allocateDirect(numVertices * TEXCOORDS_PER_VERTEX * FLOAT_SIZE);
 		bbTexCoordsTransformed.order(ByteOrder.nativeOrder());
 		quadTexCoords = bbTexCoordsTransformed.asFloatBuffer();
+
+//		int vertexShader =
+//				ShaderUtil.loadGLShader(TAG, context, GLES20.GL_VERTEX_SHADER, VERTEX_SHADER_NAME);
+//		int fragmentShader =
+//				ShaderUtil.loadGLShader(TAG, context, GLES20.GL_FRAGMENT_SHADER, FRAGMENT_SHADER_NAME);
+//
+//		quadProgram = GLES20.glCreateProgram();
+//		GLES20.glAttachShader(quadProgram, vertexShader);
+//		GLES20.glAttachShader(quadProgram, fragmentShader);
+//		GLES20.glLinkProgram(quadProgram);
+//		GLES20.glUseProgram(quadProgram);
 		
-		int vertexShader =
-				ShaderUtil.loadGLShader(TAG, context, GLES20.GL_VERTEX_SHADER, VERTEX_SHADER_NAME);
-		int fragmentShader =
-				ShaderUtil.loadGLShader(TAG, context, GLES20.GL_FRAGMENT_SHADER, FRAGMENT_SHADER_NAME);
-		
-		quadProgram = GLES20.glCreateProgram();
-		GLES20.glAttachShader(quadProgram, vertexShader);
-		GLES20.glAttachShader(quadProgram, fragmentShader);
-		GLES20.glLinkProgram(quadProgram);
-		GLES20.glUseProgram(quadProgram);
+		quadProgram = GLSupport.glMakeProgram(TAG, context, VERTEX_SHADER_PATH, FRAGMENT_SHADER_PATH);
+		//
 		
 		ShaderUtil.checkGLError(TAG, "Program creation");
 		
