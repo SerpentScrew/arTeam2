@@ -19,7 +19,7 @@ import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 
-import com.example.arteam2.Renderer.Shader.GLSupport;
+import com.example.arteam2.GL.GLSupport;
 import com.example.arteam2.Utility.ShaderUtil;
 import com.google.ar.core.PointCloud;
 
@@ -43,7 +43,7 @@ public class PointCloudRenderer {
 	private int vbo;
 	private int vboSize;
 	
-	private int programName;
+	private int pointCloudProgram;
 	private int positionAttribute;
 	private int modelViewProjectionUniform;
 	private int colorUniform;
@@ -90,15 +90,16 @@ public class PointCloudRenderer {
 //		GLES20.glUseProgram(programName);
 //
 		
-		programName = GLSupport.glMakeProgram(TAG, context, VERTEX_SHADER_PATH, FRAGMENT_SHADER_PATH);
+		pointCloudProgram = GLSupport.glMakeProgram(TAG, context, VERTEX_SHADER_PATH, FRAGMENT_SHADER_PATH);
+		GLSupport.glBind(pointCloudProgram);
 		//
 		
 		ShaderUtil.checkGLError(TAG, "program");
 		
-		positionAttribute = GLES20.glGetAttribLocation(programName, "a_Position");
-		colorUniform = GLES20.glGetUniformLocation(programName, "u_Color");
-		modelViewProjectionUniform = GLES20.glGetUniformLocation(programName, "u_ModelViewProjection");
-		pointSizeUniform = GLES20.glGetUniformLocation(programName, "u_PointSize");
+		positionAttribute = GLES20.glGetAttribLocation(pointCloudProgram, "a_Position");
+		colorUniform = GLES20.glGetUniformLocation(pointCloudProgram, "u_Color");
+		modelViewProjectionUniform = GLES20.glGetUniformLocation(pointCloudProgram, "u_ModelViewProjection");
+		pointSizeUniform = GLES20.glGetUniformLocation(pointCloudProgram, "u_PointSize");
 		
 		ShaderUtil.checkGLError(TAG, "program  params");
 	}
@@ -147,7 +148,7 @@ public class PointCloudRenderer {
 		
 		ShaderUtil.checkGLError(TAG, "Before draw");
 		
-		GLES20.glUseProgram(programName);
+		GLES20.glUseProgram(pointCloudProgram);
 		GLES20.glEnableVertexAttribArray(positionAttribute);
 		GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, vbo);
 		GLES20.glVertexAttribPointer(positionAttribute, 4, GLES20.GL_FLOAT, false, BYTES_PER_POINT, 0);

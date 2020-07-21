@@ -21,7 +21,7 @@ import android.opengl.GLSurfaceView;
 
 import androidx.annotation.NonNull;
 
-import com.example.arteam2.Renderer.Shader.GLSupport;
+import com.example.arteam2.GL.GLSupport;
 import com.example.arteam2.Utility.ShaderUtil;
 import com.google.ar.core.Coordinates2d;
 import com.google.ar.core.Frame;
@@ -119,6 +119,7 @@ public class BackgroundRenderer {
 //		GLES20.glUseProgram(quadProgram);
 		
 		quadProgram = GLSupport.glMakeProgram(TAG, context, VERTEX_SHADER_PATH, FRAGMENT_SHADER_PATH);
+		GLSupport.glBind(quadProgram);
 		//
 		
 		ShaderUtil.checkGLError(TAG, "Program creation");

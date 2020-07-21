@@ -1,8 +1,6 @@
-package com.example.arteam2;
+package com.example.arteam2.Utility;
 
 import android.util.Log;
-
-import com.google.ar.core.PointCloud;
 
 public class Math {
 	private static final String TAG = Math.class.getName();

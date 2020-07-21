@@ -1,16 +1,17 @@
-package com.example.arteam2.Renderer.Shader;
+package com.example.arteam2.GL;
 
 import android.content.Context;
 import android.opengl.GLES20;
 import android.util.Log;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.Scanner;
 
 //  https://developer.android.com/reference/android/opengl/GLES20
 
 public class GLSupport {
+	static private final int glTrue = 1, glFalse = 0;
+	
 	public static String glReadFromAssets(Context context, String filePath) {
 		StringBuilder shaderCode = new StringBuilder();
 		try (Scanner scanner = new Scanner(context.getAssets().open(filePath))) {
@@ -24,19 +25,17 @@ public class GLSupport {
 		return shaderCode.toString();
 	}
 	
-	public static void glCheckError(String tag, String label) {
+	public static void glCheckError(String tag) {
 		int lastError = GLES20.GL_NO_ERROR;
 		int error;
 		while ((error = GLES20.glGetError()) != GLES20.GL_NO_ERROR) {
-			Log.e(tag, label + ": glError " + error);
+			Log.d(tag, "glError " + error);
 			lastError = error;
 		}
 		if (lastError != GLES20.GL_NO_ERROR) {
-			throw new RuntimeException(label + ": glError " + lastError);
+			throw new RuntimeException("glError " + lastError);
 		}
 	}
-	
-	static private final int glTrue = 1, glFalse = 0;
 	
 	public static int glMakeShader(String tag, Context context, int type, String filename) {
 		String shaderCode = glReadFromAssets(context, filename);
@@ -48,7 +47,7 @@ public class GLSupport {
 		int[] infoLogLen = new int[1];
 		GLES20.glGetShaderiv(ID, GLES20.GL_INFO_LOG_LENGTH, infoLogLen, 0);
 		
-		if (infoLogLen[0] != glFalse) {
+		if (infoLogLen[0] != glTrue) {
 			String log = GLES20.glGetShaderInfoLog(ID);
 			Log.d(tag, "glMakeShader: " + log);
 		}
@@ -82,7 +81,7 @@ public class GLSupport {
 		final int[] infoLogLen = new int[1];
 		GLES20.glGetProgramiv(program, GLES20.GL_INFO_LOG_LENGTH, infoLogLen, 0);
 		
-		if (infoLogLen[0] != glFalse) {
+		if (infoLogLen[0] != glTrue) {
 			String info = GLES20.glGetProgramInfoLog(program);
 			Log.d(tag, "glMakeProgram: " + info);
 		}
@@ -95,13 +94,21 @@ public class GLSupport {
 		}
 		
 		GLES20.glValidateProgram(program);
-
-//		GLES20.glDeleteShader(vertShader);
-//		GLES20.glDeleteShader(fragShader);
 		
-		GLES20.glUseProgram(program);
+		GLES20.glDeleteShader(vertShader);
+		GLES20.glDeleteShader(fragShader);
+
+//		GLES20.glUseProgram(program);
 		
 		return program;
+	}
+	
+	public static void glBind(int ID) {
+		GLES20.glUseProgram(ID);
+	}
+	
+	public static void glBind(int ID, int Buffer) {
+		GLES20.glBindBuffer(ID, Buffer);
 	}
 }
 

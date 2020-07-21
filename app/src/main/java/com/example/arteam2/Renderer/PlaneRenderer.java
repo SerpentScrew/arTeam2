@@ -19,7 +19,7 @@ import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 
-import com.example.arteam2.Renderer.Shader.GLSupport;
+import com.example.arteam2.GL.GLSupport;
 import com.example.arteam2.Utility.ShaderUtil;
 import com.google.ar.core.Plane;
 import com.google.ar.core.Pose;
@@ -126,6 +126,7 @@ public class PlaneRenderer {
 //		GLES20.glUseProgram(planeProgram);
 		
 		planeProgram = GLSupport.glMakeProgram(TAG, context, VERTEX_SHADER_PATH, FRAGMENT_SHADER_PATH);
+		GLSupport.glBind(planeProgram);
 		//
 		
 		ShaderUtil.checkGLError(TAG, "Program creation");
