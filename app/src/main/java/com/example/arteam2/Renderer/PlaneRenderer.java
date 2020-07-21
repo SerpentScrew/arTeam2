@@ -19,8 +19,8 @@ import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 
+import com.example.arteam2.Renderer.Shader.GLSupport;
 import com.example.arteam2.Utility.ShaderUtil;
-import com.google.ar.core.Camera;
 import com.google.ar.core.Plane;
 import com.google.ar.core.Pose;
 import com.google.ar.core.TrackingState;
@@ -45,8 +45,8 @@ public class PlaneRenderer {
 	private static final String TAG = PlaneRenderer.class.getSimpleName();
 	
 	// Shader names.
-	private static final String VERTEX_SHADER_NAME = "plane.vert";
-	private static final String FRAGMENT_SHADER_NAME = "plane.frag";
+	private static final String VERTEX_SHADER_PATH = "plane.vert";
+	private static final String FRAGMENT_SHADER_PATH = "plane.frag";
 	
 	private static final int BYTES_PER_FLOAT = Float.SIZE / 8;
 	private static final int BYTES_PER_SHORT = Short.SIZE / 8;
@@ -114,16 +114,19 @@ public class PlaneRenderer {
 	 * @param context Needed to access shader source and texture PNG.
 	 */
 	public void whenGLCreate(Context context) throws IOException {
-		int vertexShader =
-				ShaderUtil.loadGLShader(TAG, context, GLES20.GL_VERTEX_SHADER, VERTEX_SHADER_NAME);
-		int passthroughShader =
-				ShaderUtil.loadGLShader(TAG, context, GLES20.GL_FRAGMENT_SHADER, FRAGMENT_SHADER_NAME);
+//		int vertexShader =
+//				ShaderUtil.loadGLShader(TAG, context, GLES20.GL_VERTEX_SHADER, VERTEX_SHADER_NAME);
+//		int passthroughShader =
+//				ShaderUtil.loadGLShader(TAG, context, GLES20.GL_FRAGMENT_SHADER, FRAGMENT_SHADER_NAME);
+//
+//		planeProgram = GLES20.glCreateProgram();
+//		GLES20.glAttachShader(planeProgram, vertexShader);
+//		GLES20.glAttachShader(planeProgram, passthroughShader);
+//		GLES20.glLinkProgram(planeProgram);
+//		GLES20.glUseProgram(planeProgram);
 		
-		planeProgram = GLES20.glCreateProgram();
-		GLES20.glAttachShader(planeProgram, vertexShader);
-		GLES20.glAttachShader(planeProgram, passthroughShader);
-		GLES20.glLinkProgram(planeProgram);
-		GLES20.glUseProgram(planeProgram);
+		planeProgram = GLSupport.glMakeProgram(TAG, context, VERTEX_SHADER_PATH, FRAGMENT_SHADER_PATH);
+		//
 		
 		ShaderUtil.checkGLError(TAG, "Program creation");
 		

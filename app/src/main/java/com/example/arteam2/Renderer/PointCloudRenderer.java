@@ -19,6 +19,7 @@ import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 
+import com.example.arteam2.Renderer.Shader.GLSupport;
 import com.example.arteam2.Utility.ShaderUtil;
 import com.google.ar.core.PointCloud;
 
@@ -31,8 +32,8 @@ public class PointCloudRenderer {
 	private static final String TAG = PointCloud.class.getSimpleName();
 	
 	// Shader names.
-	private static final String VERTEX_SHADER_NAME = "point_cloud.vert";
-	private static final String FRAGMENT_SHADER_NAME = "point_cloud.frag";
+	private static final String VERTEX_SHADER_PATH = "point_cloud.vert";
+	private static final String FRAGMENT_SHADER_PATH = "point_cloud.frag";
 	
 	private static final int BYTES_PER_FLOAT = Float.SIZE / 8;
 	private static final int FLOATS_PER_POINT = 4; // X,Y,Z,confidence.
@@ -76,17 +77,21 @@ public class PointCloudRenderer {
 		GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0);
 		
 		ShaderUtil.checkGLError(TAG, "buffer alloc");
+
+//		int vertexShader =
+//				ShaderUtil.loadGLShader(TAG, context, GLES20.GL_VERTEX_SHADER, VERTEX_SHADER_NAME);
+//		int passthroughShader =
+//				ShaderUtil.loadGLShader(TAG, context, GLES20.GL_FRAGMENT_SHADER, FRAGMENT_SHADER_NAME);
+
+//		programName = GLES20.glCreateProgram();
+//		GLES20.glAttachShader(programName, vertexShader);
+//		GLES20.glAttachShader(programName, passthroughShader);
+//		GLES20.glLinkProgram(programName);
+//		GLES20.glUseProgram(programName);
+//
 		
-		int vertexShader =
-				ShaderUtil.loadGLShader(TAG, context, GLES20.GL_VERTEX_SHADER, VERTEX_SHADER_NAME);
-		int passthroughShader =
-				ShaderUtil.loadGLShader(TAG, context, GLES20.GL_FRAGMENT_SHADER, FRAGMENT_SHADER_NAME);
-		
-		programName = GLES20.glCreateProgram();
-		GLES20.glAttachShader(programName, vertexShader);
-		GLES20.glAttachShader(programName, passthroughShader);
-		GLES20.glLinkProgram(programName);
-		GLES20.glUseProgram(programName);
+		programName = GLSupport.glMakeProgram(TAG, context, VERTEX_SHADER_PATH, FRAGMENT_SHADER_PATH);
+		//
 		
 		ShaderUtil.checkGLError(TAG, "program");
 		

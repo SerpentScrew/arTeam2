@@ -8,14 +8,9 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Scanner;
 
+//  https://developer.android.com/reference/android/opengl/GLES20
+
 public class GLSupport {
-	/**
-	 * GLSL 코드들을 와일문으로 한줄 한줄 읽어들임
-	 *
-	 * @param context  getAsset 하기 위해 activity 를 받아옴
-	 * @param filePath GLSL 코드가 담긴 파일의 주소
-	 * @return 다 읽어들여 하나의 스트링으로 리턴
-	 */
 	public static String glReadFromAssets(Context context, String filePath) {
 		StringBuilder shaderCode = new StringBuilder();
 		try (Scanner scanner = new Scanner(context.getAssets().open(filePath))) {
@@ -29,12 +24,6 @@ public class GLSupport {
 		return shaderCode.toString();
 	}
 	
-	/**
-	 * OpenGL 을 다루며 에러가 있었는지, 어디서 에러가 생겼는지 출력해줌
-	 *
-	 * @param tag   로그 찍기 위한 태그
-	 * @param label
-	 */
 	public static void glCheckError(String tag, String label) {
 		int lastError = GLES20.GL_NO_ERROR;
 		int error;
@@ -47,32 +36,72 @@ public class GLSupport {
 		}
 	}
 	
+	static private final int glTrue = 1, glFalse = 0;
 	
 	public static int glMakeShader(String tag, Context context, int type, String filename) {
-		// 경로의 파일을 string 으로 바꿔줌
-		String code = glReadFromAssets(context, filename);
+		String shaderCode = glReadFromAssets(context, filename);
 		
-		// Compiles shader code.
-		int shader = GLES20.glCreateShader(type);
-		GLES20.glShaderSource(shader, code);
-		GLES20.glCompileShader(shader);
+		int ID = GLES20.glCreateShader(type);
+		GLES20.glShaderSource(ID, shaderCode);
+		GLES20.glCompileShader(ID);
 		
-		// Get the compilation status.
-		final int[] compileStatus = new int[1];
-		GLES20.glGetShaderiv(shader, GLES20.GL_COMPILE_STATUS, compileStatus, 0);
+		int[] infoLogLen = new int[1];
+		GLES20.glGetShaderiv(ID, GLES20.GL_INFO_LOG_LENGTH, infoLogLen, 0);
 		
-		// If the compilation failed, delete the shader.
-		if (compileStatus[0] == 0) {
-			Log.e(tag, "Error compiling shader: " + GLES20.glGetShaderInfoLog(shader));
-			GLES20.glDeleteShader(shader);
-			shader = 0;
+		if (infoLogLen[0] != glFalse) {
+			String log = GLES20.glGetShaderInfoLog(ID);
+			Log.d(tag, "glMakeShader: " + log);
 		}
 		
-		if (shader == 0) {
+		final int[] compileStatus = new int[1];
+		GLES20.glGetShaderiv(ID, GLES20.GL_COMPILE_STATUS, compileStatus, 0);
+		
+		if (compileStatus[0] != glTrue) {
+			Log.e(tag, "Error compiling shader: " + GLES20.glGetShaderInfoLog(ID));
+			GLES20.glDeleteShader(ID);
+			ID = 0;
+		}
+		
+		if (ID == glFalse) {
 			throw new RuntimeException("Error creating shader.");
 		}
 		
-		return shader;
+		return ID;
+	}
+	
+	public static int glMakeProgram(String tag, Context context, String vertPath, String fragPath) {
+		int program = GLES20.glCreateProgram();
+		int vertShader = glMakeShader(tag, context, GLES20.GL_VERTEX_SHADER, vertPath);
+		int fragShader = glMakeShader(tag, context, GLES20.GL_FRAGMENT_SHADER, fragPath);
+		
+		GLES20.glAttachShader(program, vertShader);
+		GLES20.glAttachShader(program, fragShader);
+		
+		GLES20.glLinkProgram(program);
+		
+		final int[] infoLogLen = new int[1];
+		GLES20.glGetProgramiv(program, GLES20.GL_INFO_LOG_LENGTH, infoLogLen, 0);
+		
+		if (infoLogLen[0] != glFalse) {
+			String info = GLES20.glGetProgramInfoLog(program);
+			Log.d(tag, "glMakeProgram: " + info);
+		}
+		
+		final int[] linkStatus = new int[1];
+		GLES20.glGetProgramiv(program, GLES20.GL_LINK_STATUS, linkStatus, 0);
+		if (linkStatus[0] != glTrue) {
+			GLES20.glDeleteProgram(program);
+			
+		}
+		
+		GLES20.glValidateProgram(program);
+
+//		GLES20.glDeleteShader(vertShader);
+//		GLES20.glDeleteShader(fragShader);
+		
+		GLES20.glUseProgram(program);
+		
+		return program;
 	}
 }
 
