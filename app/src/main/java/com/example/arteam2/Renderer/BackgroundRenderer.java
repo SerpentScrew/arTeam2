@@ -22,6 +22,7 @@ import android.opengl.GLSurfaceView;
 import androidx.annotation.NonNull;
 
 import com.example.arteam2.GL.GLSupport;
+import com.example.arteam2.GL.Shader;
 import com.example.arteam2.Utility.ShaderUtil;
 import com.google.ar.core.Coordinates2d;
 import com.google.ar.core.Frame;
@@ -62,7 +63,10 @@ public class BackgroundRenderer {
 			};
 	private FloatBuffer quadCoords;
 	private FloatBuffer quadTexCoords;
-	private int quadProgram;
+//	private int quadProgram;
+	
+	Shader backGroundShader;
+	
 	private int quadPositionParam;
 	private int quadTexCoordParam;
 	private int textureId = -1;
@@ -106,26 +110,14 @@ public class BackgroundRenderer {
 				ByteBuffer.allocateDirect(numVertices * TEXCOORDS_PER_VERTEX * FLOAT_SIZE);
 		bbTexCoordsTransformed.order(ByteOrder.nativeOrder());
 		quadTexCoords = bbTexCoordsTransformed.asFloatBuffer();
-
-//		int vertexShader =
-//				ShaderUtil.loadGLShader(TAG, context, GLES20.GL_VERTEX_SHADER, VERTEX_SHADER_NAME);
-//		int fragmentShader =
-//				ShaderUtil.loadGLShader(TAG, context, GLES20.GL_FRAGMENT_SHADER, FRAGMENT_SHADER_NAME);
-//
-//		quadProgram = GLES20.glCreateProgram();
-//		GLES20.glAttachShader(quadProgram, vertexShader);
-//		GLES20.glAttachShader(quadProgram, fragmentShader);
-//		GLES20.glLinkProgram(quadProgram);
-//		GLES20.glUseProgram(quadProgram);
 		
-		quadProgram = GLSupport.glMakeProgram(TAG, context, VERTEX_SHADER_PATH, FRAGMENT_SHADER_PATH);
-		GLSupport.glBind(quadProgram);
-		//
+		backGroundShader = new Shader(context, FRAGMENT_SHADER_PATH, VERTEX_SHADER_PATH);
+		backGroundShader.makeProgram().bind();
 		
 		ShaderUtil.checkGLError(TAG, "Program creation");
 		
-		quadPositionParam = GLES20.glGetAttribLocation(quadProgram, "a_Position");
-		quadTexCoordParam = GLES20.glGetAttribLocation(quadProgram, "a_TexCoord");
+		quadPositionParam = GLES20.glGetAttribLocation(backGroundShader.getProgramID(), "a_Position");
+		quadTexCoordParam = GLES20.glGetAttribLocation(backGroundShader.getProgramID(), "a_TexCoord");
 		
 		ShaderUtil.checkGLError(TAG, "Program parameters");
 	}
@@ -228,8 +220,9 @@ public class BackgroundRenderer {
 		
 		GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
 		GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureId);
-		
-		GLES20.glUseProgram(quadProgram);
+
+//		GLES20.glUseProgram(quadProgram);
+		backGroundShader.bind();
 		
 		// Set the vertex positions.
 		GLES20.glVertexAttribPointer(

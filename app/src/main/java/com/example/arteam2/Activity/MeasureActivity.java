@@ -1,20 +1,15 @@
 package com.example.arteam2.Activity;
 
-import androidx.appcompat.app.AppCompatActivity;
-
-import android.app.Activity;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.curvsurf.fsweb.FindSurfaceRequester;
-import com.curvsurf.fsweb.RequestForm;
-import com.curvsurf.fsweb.ResponseForm;
-import com.example.arteam2.Renderer.BackgroundRenderer;
+import androidx.appcompat.app.AppCompatActivity;
+
 import com.example.arteam2.R;
+import com.example.arteam2.Renderer.BackgroundRenderer;
 import com.example.arteam2.Renderer.PlaneRenderer;
 import com.example.arteam2.Renderer.PointCloudRenderer;
 import com.example.arteam2.Utility.FullScreenUtility;
@@ -30,7 +25,6 @@ import com.google.ar.core.TrackingState;
 import com.google.ar.core.exceptions.CameraNotAvailableException;
 
 import java.io.IOException;
-import java.nio.FloatBuffer;
 import java.util.Objects;
 
 import javax.microedition.khronos.egl.EGLConfig;
@@ -49,12 +43,15 @@ public class MeasureActivity extends AppCompatActivity implements GLSurfaceView.
 	
 	private boolean userRequestedInstall = false;
 	
+	private boolean surfacedCreated = false;
+	
 	@Override
 	public void onSurfaceCreated(GL10 gl10, EGLConfig eglConfig) {
 		GLES20.glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		GLES20.glDisable(GLES20.GL_CULL_FACE);
 		GLES20.glEnable(GLES20.GL_DEPTH_TEST);
 		
+		surfacedCreated = true;
 		
 		try {
 			backgroundRenderer.whenGLCreate(this);
@@ -78,6 +75,7 @@ public class MeasureActivity extends AppCompatActivity implements GLSurfaceView.
 		GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
 		
 		if (session == null) return;
+		if (!surfacedCreated) return;
 		
 		if (screenStatus.isRotated) {
 			int displayRotation = this.getWindowManager().getDefaultDisplay().getRotation();
@@ -190,7 +188,7 @@ public class MeasureActivity extends AppCompatActivity implements GLSurfaceView.
 
 //	public class PlaneFinder extends AsyncTask<Object, ResponseForm.PlaneParam, ResponseForm.PlaneParam> {
 //		@Override
-//		protected ResponseForm.PlaneParam doInBackground(Object... objects) {
+//		p}rotected ResponseForm.PlaneParam doInBackground(Object... objects) {
 //			// Ready Point Cloud
 //			FloatBuffer points = pointCloudRenderer.finalPointBuffer;
 //

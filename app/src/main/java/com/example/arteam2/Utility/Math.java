@@ -6,7 +6,6 @@ public class Math {
 	private static final String TAG = Math.class.getName();
 	
 	static class Vec3 {
-		
 		private float[] vec = new float[4];
 		
 		public Vec3() {
