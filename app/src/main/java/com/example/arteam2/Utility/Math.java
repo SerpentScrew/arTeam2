@@ -1,14 +1,11 @@
-package com.example.arteam2;
+package com.example.arteam2.Utility;
 
 import android.util.Log;
-
-import com.google.ar.core.PointCloud;
 
 public class Math {
 	private static final String TAG = Math.class.getName();
 	
 	static class Vec3 {
-		
 		private float[] vec = new float[4];
 		
 		public Vec3() {

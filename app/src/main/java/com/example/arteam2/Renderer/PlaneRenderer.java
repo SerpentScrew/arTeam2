@@ -19,7 +19,8 @@ import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 
-import com.example.arteam2.Renderer.Shader.GLSupport;
+import com.example.arteam2.GL.GLSupport;
+import com.example.arteam2.GL.Shader;
 import com.example.arteam2.Utility.ShaderUtil;
 import com.google.ar.core.Plane;
 import com.google.ar.core.Pose;
@@ -77,7 +78,10 @@ public class PlaneRenderer {
 	private final float[] modelViewMatrix = new float[16];
 	private final float[] modelViewProjectionMatrix = new float[16];
 	private final Map<Plane, Integer> planeIndexMap = new HashMap<>();
-	private int planeProgram;
+//	private int planeProgram;
+	
+	Shader planeShader;
+	
 	private int planeXZPositionAlphaAttribute;
 	private int planeModelViewProjectionUniform;
 	private FloatBuffer vertexBuffer =
@@ -124,15 +128,19 @@ public class PlaneRenderer {
 //		GLES20.glAttachShader(planeProgram, passthroughShader);
 //		GLES20.glLinkProgram(planeProgram);
 //		GLES20.glUseProgram(planeProgram);
-		
-		planeProgram = GLSupport.glMakeProgram(TAG, context, VERTEX_SHADER_PATH, FRAGMENT_SHADER_PATH);
+
+//		planeProgram = GLSupport.glMakeProgram(TAG, context, VERTEX_SHADER_PATH, FRAGMENT_SHADER_PATH);
+//		GLSupport.glBind(planeProgram);
 		//
+		
+		planeShader = new Shader(context, FRAGMENT_SHADER_PATH, VERTEX_SHADER_PATH);
+		planeShader.makeProgram().bind();
 		
 		ShaderUtil.checkGLError(TAG, "Program creation");
 		
-		planeXZPositionAlphaAttribute = GLES20.glGetAttribLocation(planeProgram, "a_XZPositionAlpha");
+		planeXZPositionAlphaAttribute = GLES20.glGetAttribLocation(planeShader.getProgramID(), "a_XZPositionAlpha");
 		planeModelViewProjectionUniform =
-				GLES20.glGetUniformLocation(planeProgram, "u_ModelViewProjection");
+				GLES20.glGetUniformLocation(planeShader.getProgramID(), "u_ModelViewProjection");
 		
 		ShaderUtil.checkGLError(TAG, "Program parameters");
 	}
@@ -297,7 +305,8 @@ public class PlaneRenderer {
 				GLES20.GL_ZERO, GLES20.GL_ONE_MINUS_SRC_ALPHA); // ALPHA (src, dest)
 		
 		// Set up the shader.
-		GLES20.glUseProgram(planeProgram);
+//		GLES20.glUseProgram(planeProgram);
+		planeShader.bind();
 		
 		// Enable vertex arrays
 		GLES20.glEnableVertexAttribArray(planeXZPositionAlphaAttribute);
