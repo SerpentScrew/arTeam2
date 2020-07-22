@@ -126,15 +126,6 @@ public class BackgroundRenderer {
 		this.suppressTimestampZeroRendering = suppressTimestampZeroRendering;
 	}
 	
-	/**
-	 * Draws the AR background image. The image will be drawn such that virtual content rendered with
-	 * the matrices provided by {@link com.google.ar.core.Camera#getViewMatrix(float[], int)} and
-	 * {@link com.google.ar.core.Camera#getProjectionMatrix(float[], int, float, float)} will
-	 * accurately follow static physical objects. This must be called <b>before</b> drawing virtual
-	 * content.
-	 *
-	 * @param frame The current {@code Frame} as returned by {@link Session#update()}.
-	 */
 	public void draw(@NonNull Frame frame) {
 		// If display rotation changed (also includes view size change), we need to re-query the uv
 		// coordinates for the screen rect, as they may have changed as well.
@@ -155,14 +146,6 @@ public class BackgroundRenderer {
 		draw();
 	}
 	
-	/**
-	 * Draws the camera image using the currently configured {@link BackgroundRenderer#quadTexCoords}
-	 * image texture coordinates.
-	 *
-	 * <p>The image will be center cropped if the camera sensor aspect ratio does not match the screen
-	 * aspect ratio, which matches the cropping behavior of {@link
-	 * Frame#transformCoordinates2d(Coordinates2d, float[], Coordinates2d, float[])}.
-	 */
 	public void draw(
 			int imageWidth, int imageHeight, float screenAspectRatio, int cameraToDisplayRotation) {
 		// Crop the camera image to fit the screen aspect ratio.
@@ -205,10 +188,7 @@ public class BackgroundRenderer {
 		draw();
 	}
 	
-	/**
-	 * Draws the camera background image using the currently configured {@link
-	 * BackgroundRenderer#quadTexCoords} image texture coordinates.
-	 */
+
 	private void draw() {
 		// Ensure position is rewound before use.
 		quadTexCoords.position(0);
@@ -218,11 +198,11 @@ public class BackgroundRenderer {
 		GLES20.glDisable(GLES20.GL_DEPTH_TEST);
 		GLES20.glDepthMask(false);
 		
+		backGroundShader.bind();
+		
 		GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
 		GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureId);
-
-//		GLES20.glUseProgram(quadProgram);
-		backGroundShader.bind();
+		
 		
 		// Set the vertex positions.
 		GLES20.glVertexAttribPointer(

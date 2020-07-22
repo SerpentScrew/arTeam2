@@ -23,15 +23,15 @@ public class Shader {
 	}
 	
 	public void bind() {
-		GLSupport.check(TAG, "in Shader Bind");
+		GLSupport.checkError(TAG, "in Shader Bind");
 		GLES20.glUseProgram(programID);
-		GLSupport.check(TAG, "in Shader Bind");
+		GLSupport.checkError(TAG, "in Shader Bind");
 	}
 	
 	public void unBind() {
-		GLSupport.check(TAG, "in Shader Unbind");
+		GLSupport.checkError(TAG, "in Shader Unbind");
 		GLES20.glUseProgram(0);
-		GLSupport.check(TAG, "in Shader Unbind");
+		GLSupport.checkError(TAG, "in Shader Unbind");
 	}
 	
 	String readFromAssets(Context context, String filePath) {
@@ -48,21 +48,14 @@ public class Shader {
 	}
 	
 	int makeShader(int glEnum) {
+		GLSupport.checkError(TAG, "in Shader MakeShader");
 		int ID;
-		GLSupport.check(TAG, "in Shader MakeShader");
 		ID = GLES20.glCreateShader(glEnum);
-		GLSupport.check(TAG, "in Shader MakeShader");
-		GLSupport.check(TAG, "in Shader MakeShader");
 		GLES20.glShaderSource(ID, shaderCode.get(glEnum));
-		GLSupport.check(TAG, "in Shader MakeShader");
-		GLSupport.check(TAG, "in Shader MakeShader");
 		GLES20.glCompileShader(ID);
-		GLSupport.check(TAG, "in Shader MakeShader");
 		
 		int[] infoLogLen = new int[1];
-		GLSupport.check(TAG, "in Shader MakeShader");
 		GLES20.glGetShaderiv(ID, GLES20.GL_INFO_LOG_LENGTH, infoLogLen, 0);
-		GLSupport.check(TAG, "in Shader MakeShader");
 		
 		if (infoLogLen[0] != glTrue) {
 			String log = GLES20.glGetShaderInfoLog(ID);
@@ -70,46 +63,36 @@ public class Shader {
 		}
 		
 		final int[] compileStatus = new int[1];
-		GLSupport.check(TAG, "in Shader MakeShader");
 		GLES20.glGetShaderiv(ID, GLES20.GL_COMPILE_STATUS, compileStatus, 0);
-		GLSupport.check(TAG, "in Shader MakeShader");
 		
 		if (compileStatus[0] != glTrue) {
 			Log.e(this.getClass().getName(), "Error compiling shader: " + GLES20.glGetShaderInfoLog(ID));
-			GLSupport.check(TAG, "in Shader MakeShader");
 			GLES20.glDeleteShader(ID);
-			GLSupport.check(TAG, "in Shader MakeShader");
 			ID = 0;
 		}
 		
 		if (ID == glFalse) {
 			throw new RuntimeException("Error creating shader.");
 		}
+		GLSupport.checkError(TAG, "in Shader MakeShader");
 		
 		
 		return ID;
 	}
 	
 	public Shader makeProgram() {
+		GLSupport.checkError(TAG, "in Shader MakeProgram");
 		programID = GLES20.glCreateProgram();
 		int fragID = makeShader(GLES20.GL_FRAGMENT_SHADER);
 		int vertID = makeShader(GLES20.GL_VERTEX_SHADER);
 		
-		GLSupport.check(TAG, "in Shader MakeProgram");
 		GLES20.glAttachShader(programID, fragID);
-		GLSupport.check(TAG, "in Shader MakeProgram");
-		GLSupport.check(TAG, "in Shader MakeProgram");
 		GLES20.glAttachShader(programID, vertID);
-		GLSupport.check(TAG, "in Shader MakeProgram");
 		
-		GLSupport.check(TAG, "in Shader MakeProgram");
 		GLES20.glLinkProgram(programID);
-		GLSupport.check(TAG, "in Shader MakeProgram");
 		
 		final int[] infoLogLen = new int[1];
-		GLSupport.check(TAG, "in Shader MakeProgram");
 		GLES20.glGetProgramiv(programID, GLES20.GL_INFO_LOG_LENGTH, infoLogLen, 0);
-		GLSupport.check(TAG, "in Shader MakeProgram");
 		
 		if (infoLogLen[0] != glTrue) {
 			String info = GLES20.glGetProgramInfoLog(programID);
@@ -117,26 +100,16 @@ public class Shader {
 		}
 		
 		final int[] linkStatus = new int[1];
-		GLSupport.check(TAG, "in Shader MakeProgram");
 		GLES20.glGetProgramiv(programID, GLES20.GL_LINK_STATUS, linkStatus, 0);
-		GLSupport.check(TAG, "in Shader MakeProgram");
 		if (linkStatus[0] != glTrue) {
-			GLSupport.check(TAG, "in Shader MakeProgram");
 			GLES20.glDeleteProgram(programID);
-			GLSupport.check(TAG, "in Shader MakeProgram");
 		}
 		
-		GLSupport.check(TAG, "in Shader MakeProgram");
 		GLES20.glValidateProgram(programID);
-		GLSupport.check(TAG, "in Shader MakeProgram");
 		
-		GLSupport.check(TAG, "in Shader MakeProgram");
 		GLES20.glDeleteShader(vertID);
-		GLSupport.check(TAG, "in Shader MakeProgram");
-		GLSupport.check(TAG, "in Shader MakeProgram");
 		GLES20.glDeleteShader(fragID);
-		GLSupport.check(TAG, "in Shader MakeProgram");
-		
+		GLSupport.checkError(TAG, "in Shader MakeProgram");
 		
 		return this;
 	}
@@ -147,20 +120,53 @@ public class Shader {
 	}
 	
 	public void setUniform(String target, float f1) {
-		GLSupport.check(TAG, "in Shader SetUniform");
+		GLSupport.checkError(TAG, "in Shader SetUniform");
+		this.bind();
 		GLES20.glUniform1f(GLES20.glGetUniformLocation(programID, target), f1);
-		GLSupport.check(TAG, "in Shader SetUniform");
+		this.unBind();
+		GLSupport.checkError(TAG, "in Shader SetUniform");
 	}
 	
 	public void setUniform(String target, float f1, float f2, float f3, float f4) {
-		GLSupport.check(TAG, "in Shader SetUniform");
+		GLSupport.checkError(TAG, "in Shader SetUniform");
+		this.bind();
 		GLES20.glUniform4f(GLES20.glGetUniformLocation(programID, target), f1, f2, f3, f4);
-		GLSupport.check(TAG, "in Shader SetUniform");
+		this.unBind();
+		GLSupport.checkError(TAG, "in Shader SetUniform");
 	}
 	
 	public void setUniform(String target, int count, boolean t, float[] value, int offset) {
-		GLSupport.check(TAG, "in Shader SetUniform");
+		GLSupport.checkError(TAG, "in Shader SetUniform");
+		this.bind();
 		GLES20.glUniformMatrix4fv(GLES20.glGetUniformLocation(programID, target), count, t, value, offset);
-		GLSupport.check(TAG, "in Shader SetUniform");
+		this.unBind();
+		GLSupport.checkError(TAG, "in Shader SetUniform");
+	}
+	
+	public void setAttrib(GLObject glObject, String string, int size, int type, boolean normalized, int stride, int offset) {
+		GLSupport.checkError(TAG, "in Shader SetAttrib");
+		glObject.bind();
+		this.bind();
+		
+		int pos = GLES20.glGetAttribLocation(programID, string);
+		GLES20.glEnableVertexAttribArray(pos);
+		GLES20.glVertexAttribPointer(pos, size, type, normalized, stride, offset);
+		
+		this.unBind();
+		glObject.unBind();
+		GLSupport.checkError(TAG, "in Shader SetAttrib");
+	}
+	
+	public void freeAtrib(GLObject glObject, String string) {
+		GLSupport.checkError(TAG, "in Shader FreeAttrib");
+		glObject.bind();
+		this.bind();
+		
+		int pos = GLES20.glGetAttribLocation(programID, string);
+		GLES20.glDisableVertexAttribArray(pos);
+		
+		this.unBind();
+		glObject.unBind();
+		GLSupport.checkError(TAG, "in Shader FreeAttrib");
 	}
 }
