@@ -5,6 +5,7 @@ import android.opengl.GLES20;
 import android.util.Log;
 
 import java.io.IOException;
+import java.nio.Buffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
@@ -151,6 +152,22 @@ public class Shader {
 		int pos = GLES20.glGetAttribLocation(programID, string);
 		GLES20.glEnableVertexAttribArray(pos);
 		GLES20.glVertexAttribPointer(pos, size, type, normalized, stride, offset);
+		
+		this.unBind();
+		glObject.unBind();
+		GLSupport.checkError(TAG, "in Shader SetAttrib");
+	}
+	
+	public void setAttrib(GLObject glObject, String string, int size, int type, boolean normalized, int stride, Buffer buffer) {
+		GLSupport.checkError(TAG, "in Shader SetAttrib");
+		glObject.bind();
+		this.bind();
+		
+		buffer.position(0);
+		
+		int pos = GLES20.glGetAttribLocation(programID, string);
+		GLES20.glVertexAttribPointer(pos, size, type, normalized, stride, buffer);
+		GLES20.glEnableVertexAttribArray(pos);
 		
 		this.unBind();
 		glObject.unBind();

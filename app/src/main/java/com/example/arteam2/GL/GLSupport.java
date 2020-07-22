@@ -33,5 +33,13 @@ public class GLSupport {
 		fb.position(0);
 		return fb;
 	}
+	
+	public static FloatBuffer makeFloatBuffer(int size) {
+		FloatBuffer fb;
+		ByteBuffer bb = ByteBuffer.allocateDirect(size);
+		bb.order(ByteOrder.nativeOrder());
+		fb = bb.asFloatBuffer();
+		return fb;
+	}
 }
 

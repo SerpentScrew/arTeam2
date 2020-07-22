@@ -15,111 +15,62 @@
 package com.example.arteam2.Renderer;
 
 import android.content.Context;
-import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
-import android.opengl.GLSurfaceView;
 
 import androidx.annotation.NonNull;
 
 import com.example.arteam2.GL.GLSupport;
+import com.example.arteam2.GL.Renderer;
 import com.example.arteam2.GL.Shader;
-import com.example.arteam2.Utility.ShaderUtil;
+import com.example.arteam2.GL.Texture;
 import com.google.ar.core.Coordinates2d;
 import com.google.ar.core.Frame;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 
-/**
- * This class renders the AR background from camera feed. It creates and hosts the texture given to
- * ARCore to be filled with the camera image.
- */
 public class BackgroundRenderer {
 	private static final String TAG = BackgroundRenderer.class.getSimpleName();
 	
-	// Shader names.
 	private static final String VERTEX_SHADER_PATH = "screenquad.vert";
 	private static final String FRAGMENT_SHADER_PATH = "screenquad.frag";
 	
 	private static final int COORDS_PER_VERTEX = 2;
 	private static final int TEXCOORDS_PER_VERTEX = 2;
 	private static final int FLOAT_SIZE = 4;
-	/**
-	 * (-1, 1) ------- (1, 1)
-	 * |    \           |
-	 * |       \        |
-	 * |          \     |
-	 * |             \  |
-	 * (-1, -1) ------ (1, -1)
-	 * Ensure triangles are front-facing, to support glCullFace().
-	 * This quad will be drawn using GL_TRIANGLE_STRIP which draws two
-	 * triangles: v0->v1->v2, then v2->v1->v3.
-	 */
+	
 	private static final float[] QUAD_COORDS =
 			new float[]{
-					-1.0f, -1.0f, +1.0f, -1.0f, -1.0f, +1.0f, +1.0f, +1.0f,
+					-1.0f, -1.0f,
+					+1.0f, -1.0f,
+					-1.0f, +1.0f,
+					+1.0f, +1.0f,
 			};
 	private FloatBuffer quadCoords;
 	private FloatBuffer quadTexCoords;
-//	private int quadProgram;
 	
 	Shader backGroundShader;
+	Texture texture;
 	
-	private int quadPositionParam;
-	private int quadTexCoordParam;
-	private int textureId = -1;
 	private boolean suppressTimestampZeroRendering = true;
 	
 	public int getTextureId() {
-		return textureId;
+		return texture.getTextureID();
 	}
 	
-	/**
-	 * Allocates and initializes OpenGL resources needed by the background renderer. Must be called on
-	 * the OpenGL thread, typically in {@link GLSurfaceView.Renderer#onSurfaceCreated(GL10,
-	 * EGLConfig)}.
-	 *
-	 * @param context Needed to access shader source.
-	 */
-	public void whenGLCreate(Context context) throws IOException {
-		// Generate the background texture.
-		int[] textures = new int[1];
-		GLES20.glGenTextures(1, textures, 0);
-		textureId = textures[0];
-		int textureTarget = GLES11Ext.GL_TEXTURE_EXTERNAL_OES;
-		GLES20.glBindTexture(textureTarget, textureId);
-		GLES20.glTexParameteri(textureTarget, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE);
-		GLES20.glTexParameteri(textureTarget, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
-		GLES20.glTexParameteri(textureTarget, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
-		GLES20.glTexParameteri(textureTarget, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
+	public void whenGLCreate(Context context) {
+		texture = new Texture();
 		
 		int numVertices = 4;
 		if (numVertices != QUAD_COORDS.length / COORDS_PER_VERTEX) {
 			throw new RuntimeException("Unexpected number of vertices in BackgroundRenderer.");
 		}
 		
-		ByteBuffer bbCoords = ByteBuffer.allocateDirect(QUAD_COORDS.length * FLOAT_SIZE);
-		bbCoords.order(ByteOrder.nativeOrder());
-		quadCoords = bbCoords.asFloatBuffer();
-		quadCoords.put(QUAD_COORDS);
-		quadCoords.position(0);
+		quadCoords = GLSupport.makeFloatBuffer(QUAD_COORDS);
 		
-		ByteBuffer bbTexCoordsTransformed =
-				ByteBuffer.allocateDirect(numVertices * TEXCOORDS_PER_VERTEX * FLOAT_SIZE);
-		bbTexCoordsTransformed.order(ByteOrder.nativeOrder());
-		quadTexCoords = bbTexCoordsTransformed.asFloatBuffer();
+		quadTexCoords = GLSupport.makeFloatBuffer(numVertices * TEXCOORDS_PER_VERTEX * FLOAT_SIZE);
 		
 		backGroundShader = new Shader(context, FRAGMENT_SHADER_PATH, VERTEX_SHADER_PATH);
 		backGroundShader.makeProgram().bind();
-		
-		ShaderUtil.checkGLError(TAG, "Program creation");
-		
-		quadPositionParam = GLES20.glGetAttribLocation(backGroundShader.getProgramID(), "a_Position");
-		quadTexCoordParam = GLES20.glGetAttribLocation(backGroundShader.getProgramID(), "a_TexCoord");
-		
-		ShaderUtil.checkGLError(TAG, "Program parameters");
 	}
 	
 	public void suppressTimestampZeroRendering(boolean suppressTimestampZeroRendering) {
@@ -188,44 +139,21 @@ public class BackgroundRenderer {
 		draw();
 	}
 	
-
+	
 	private void draw() {
-		// Ensure position is rewound before use.
-		quadTexCoords.position(0);
-		
-		// No need to test or write depth, the screen quad has arbitrary depth, and is expected
-		// to be drawn first.
 		GLES20.glDisable(GLES20.GL_DEPTH_TEST);
 		GLES20.glDepthMask(false);
+		//
+		backGroundShader.setAttrib(texture, "a_Position", COORDS_PER_VERTEX, GLES20.GL_FLOAT, false, 0, quadCoords);
+		backGroundShader.setAttrib(texture, "a_TexCoord", TEXCOORDS_PER_VERTEX, GLES20.GL_FLOAT, false, 0, quadTexCoords);
 		
-		backGroundShader.bind();
+		Renderer.draw(backGroundShader, texture, GLES20.GL_TRIANGLE_STRIP, 0, 4);
 		
-		GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-		GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureId);
+		backGroundShader.freeAtrib(texture, "a_Position");
+		backGroundShader.freeAtrib(texture, "a_TexCoord");
 		
-		
-		// Set the vertex positions.
-		GLES20.glVertexAttribPointer(
-				quadPositionParam, COORDS_PER_VERTEX, GLES20.GL_FLOAT, false, 0, quadCoords);
-		
-		// Set the texture coordinates.
-		GLES20.glVertexAttribPointer(
-				quadTexCoordParam, TEXCOORDS_PER_VERTEX, GLES20.GL_FLOAT, false, 0, quadTexCoords);
-		
-		// Enable vertex arrays
-		GLES20.glEnableVertexAttribArray(quadPositionParam);
-		GLES20.glEnableVertexAttribArray(quadTexCoordParam);
-		
-		GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
-		
-		// Disable vertex arrays
-		GLES20.glDisableVertexAttribArray(quadPositionParam);
-		GLES20.glDisableVertexAttribArray(quadTexCoordParam);
-		
-		// Restore the depth state for further drawing.
 		GLES20.glDepthMask(true);
 		GLES20.glEnable(GLES20.GL_DEPTH_TEST);
 		
-		ShaderUtil.checkGLError(TAG, "BackgroundRendererDraw");
 	}
 }
