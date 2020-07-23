@@ -34,7 +34,6 @@ public class PointHandler {
 	
 	private boolean isFiltered = false;
 	private boolean isRetry = false;
-	private boolean isSucceedPickPoint = false;
 	
 	public void whenGLCreate(Context context) {
 		allPoints = new HashMap<>();
@@ -70,6 +69,7 @@ public class PointHandler {
 	}
 	
 	public void pickToEraseFloor(float xPx, float yPx, int width, int height, Camera camera) {
+		boolean isSucceedPickPoint = false;
 		float[] ray = CoreSystem.screenPointToWorldRay(xPx, yPx, width, height, camera);
 		
 		float thresholdDistance = 0.01f; // 10cm = 0.1m * 0.1m = 0.01f
