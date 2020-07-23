@@ -20,7 +20,6 @@ public class Shader {
 	public Shader(Context context, String fragPath, String vertPath) {
 		this.shaderCode.put(GLES20.GL_FRAGMENT_SHADER, readFromAssets(context, fragPath));
 		this.shaderCode.put(GLES20.GL_VERTEX_SHADER, readFromAssets(context, vertPath));
-		System.out.println("///////////////////////////// shader constructed");
 	}
 	
 	public void bind() {
@@ -115,7 +114,7 @@ public class Shader {
 		return this;
 	}
 	
-	// TODO : 이거 지우고 암튼 바꾸기
+	// TODO : 암튼 바꾸고 이거 지우기
 	public int getProgramID() {
 		return programID;
 	}

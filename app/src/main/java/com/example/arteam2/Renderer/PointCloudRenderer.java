@@ -15,13 +15,18 @@
 package com.example.arteam2.Renderer;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.opengl.GLES20;
-import android.opengl.Matrix;
+import android.os.Build;
+
+import androidx.annotation.RequiresApi;
 
 import com.example.arteam2.GL.Renderer;
 import com.example.arteam2.GL.Shader;
 import com.example.arteam2.GL.VertexBuffer;
 import com.google.ar.core.PointCloud;
+
+import java.nio.FloatBuffer;
 
 public class PointCloudRenderer {
 	private static final String TAG = PointCloud.class.getSimpleName();
@@ -37,10 +42,6 @@ public class PointCloudRenderer {
 	
 	Shader pointCloudShader;
 	
-	private int numPoints = 0;
-	
-	private long lastTimestamp = 0;
-	
 	public PointCloudRenderer() {
 	}
 	
@@ -50,25 +51,14 @@ public class PointCloudRenderer {
 		pointCloudShader.makeProgram().bind();
 	}
 	
-	public void update(PointCloud cloud) {
-		if (cloud.getTimestamp() == lastTimestamp) {
-			return;
-		}
-		lastTimestamp = cloud.getTimestamp();
-		numPoints = cloud.getPoints().remaining() / FLOATS_PER_POINT;
-		System.out.println("/////////////////////// numPoints : " + numPoints);
-		pointCloudVBO.fillData(cloud.getPoints());
-	}
-	
-	public void draw(float[] cameraView, float[] cameraPerspective) {
-		float[] modelViewProjection = new float[16];
-		Matrix.multiplyMM(modelViewProjection, 0, cameraPerspective, 0, cameraView, 0);
-		
+	@RequiresApi(api = Build.VERSION_CODES.O)
+	public void draw(FloatBuffer floatBuffer, float[] modelViewProjection, Color color) {
+		pointCloudVBO.fillData(floatBuffer);
 		pointCloudShader.setAttrib(pointCloudVBO, "a_Position", 4, GLES20.GL_FLOAT, false, BYTES_PER_POINT, 0);
-		pointCloudShader.setUniform("u_Color", 1.0f, 0.0f, 0.0f, 1.0f);
+		pointCloudShader.setUniform("u_Color", color.red(), color.green(), color.blue(), color.alpha());
 		pointCloudShader.setUniform("u_ModelViewProjection", 1, false, modelViewProjection, 0);
 		pointCloudShader.setUniform("u_PointSize", 10.0f);
-		Renderer.draw(pointCloudShader, GLES20.GL_POINTS, 0, numPoints);
+		Renderer.draw(pointCloudShader, GLES20.GL_POINTS, 0, floatBuffer.remaining() / FLOATS_PER_POINT);
 		pointCloudShader.freeAtrib(pointCloudVBO, "a_Position");
 	}
 }
