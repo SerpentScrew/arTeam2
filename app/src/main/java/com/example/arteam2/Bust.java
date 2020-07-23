@@ -4,4 +4,6 @@ public enum Bust {
 	StanBy,
 	Collecting,
 	CollectDone,
+	FindingFloor,
+	FoundFloor
 }

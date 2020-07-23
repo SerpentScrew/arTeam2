@@ -8,6 +8,7 @@ import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Objects;
 
 //  https://developer.android.com/reference/android/opengl/GLES20
 
@@ -51,7 +52,10 @@ public class GLSupport {
 		fb = bb.asFloatBuffer();
 		for (int id : map.keySet()) {
 			float[] tmp = {
-					map.get(id)[0], map.get(id)[1], map.get(id)[2], 1.0f,
+					Objects.requireNonNull(map.get(id))[0],
+					Objects.requireNonNull(map.get(id))[1],
+					Objects.requireNonNull(map.get(id))[2],
+					1.0f,
 			};
 			fb.put(tmp);
 		}
@@ -62,7 +66,7 @@ public class GLSupport {
 	public static FloatBuffer makeListFloatBuffer(Map<Integer, ArrayList<float[]>> map) {
 		int numElements = 0;
 		for (int id : map.keySet()) {
-			for (float[] mapElement : map.get(id)) {
+			for (float[] mapElement : Objects.requireNonNull(map.get(id))) {
 				numElements++;
 			}
 		}
@@ -73,7 +77,7 @@ public class GLSupport {
 		bb.order(ByteOrder.nativeOrder());
 		fb = bb.asFloatBuffer();
 		for (int id : map.keySet()) {
-			for (float[] mapElement : map.get(id)) {
+			for (float[] mapElement : Objects.requireNonNull(map.get(id))) {
 				float[] tmp = {
 						mapElement[0], mapElement[1], mapElement[2], 1.0f,
 				};

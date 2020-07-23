@@ -3,7 +3,6 @@ package com.example.arteam2.Activity;
 import android.annotation.SuppressLint;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -15,7 +14,6 @@ import android.widget.Toast;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.example.arteam2.Bust;
 import com.example.arteam2.R;
 import com.example.arteam2.Renderer.BackgroundRenderer;
 import com.example.arteam2.Renderer.PlaneRenderer;
@@ -46,6 +44,8 @@ public class MeasureActivity extends AppCompatActivity implements GLSurfaceView.
 	private PlaneRenderer planeRenderer = new PlaneRenderer();
 	
 	Snackbar snackbar;
+	
+	private Camera camera = null;
 	
 	private GLSurfaceView measureView;
 	private PointHandler pointHandler = new PointHandler();
@@ -109,7 +109,7 @@ public class MeasureActivity extends AppCompatActivity implements GLSurfaceView.
 			Frame frame = session.update();
 			backgroundRenderer.draw(frame);
 			
-			Camera camera = frame.getCamera();
+			camera = frame.getCamera();
 			
 			float[] projMTX = new float[16];
 			camera.getProjectionMatrix(projMTX, 0, 0.1f, 100f);
@@ -133,23 +133,28 @@ public class MeasureActivity extends AppCompatActivity implements GLSurfaceView.
 				switch (pointHandler.getMode()) {
 					case StanBy:
 						numPointsView.setVisibility(View.INVISIBLE);
-						snackbar.setText("터치하면 정보를 수집하기 시작합니다!");
+						snackbar.setText("터치하면 정보를 수집하기 시작합니다.");
 						snackbar.show();
 						break;
 					
 					case Collecting:
 						snackbar.dismiss();
-						numPointsView.setVisibility(View.VISIBLE);
 						numPointsView.setText("수집된 점의 개수 : " + pointHandler.getCollectedPointsNum());
+						numPointsView.setVisibility(View.VISIBLE);
 						if (pointHandler.hasEnoughPoint()) {
-//							pointHandler.filterPoints();
 							pointHandler.collectingEnd();
 						}
 						break;
 					
 					case CollectDone:
+						snackbar.setText(pointHandler.isRetry() ?
+								                 "근처에 특징점이 없습니다. 다른 곳을 터치해 주세요." :
+								                 "땅을 터치해 주세요!");
 						snackbar.show();
-						snackbar.setText("땅을 터치해 주세요!");
+						break;
+					case FindingFloor:
+						snackbar.setText("땅을 찾는 중입니다.");
+						snackbar.show();
 						break;
 				}
 			}
@@ -159,8 +164,22 @@ public class MeasureActivity extends AppCompatActivity implements GLSurfaceView.
 		measureView.setOnTouchListener(new View.OnTouchListener() {
 			@Override
 			public boolean onTouch(View v, MotionEvent event) {
-				if (pointHandler.getMode() == Bust.StanBy)
-					pointHandler.collectingStart();
+				switch (pointHandler.getMode()) {
+					case StanBy:
+						pointHandler.collectingStart();
+						break;
+					case Collecting:
+						break;
+					case CollectDone:
+						if (camera == null) break;
+						pointHandler.findFloorStart();
+						pointHandler.pickToEraseFloor(
+								event.getX(), event.getY(),
+								measureView.getMeasuredWidth(), measureView.getMeasuredHeight(),
+								camera
+						                             );
+						break;
+				}
 				return false;
 			}
 		});
@@ -256,6 +275,11 @@ public class MeasureActivity extends AppCompatActivity implements GLSurfaceView.
 			}
 		}
 		return false;
+	}
+	
+	
+	public Camera getCamera() {
+		return camera;
 	}
 	
 	static class ScreenStatus {
