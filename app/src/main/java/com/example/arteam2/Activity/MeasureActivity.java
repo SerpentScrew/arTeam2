@@ -1,19 +1,28 @@
 package com.example.arteam2.Activity;
 
+import android.annotation.SuppressLint;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
+import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MotionEvent;
+import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.arteam2.Bust;
 import com.example.arteam2.R;
 import com.example.arteam2.Renderer.BackgroundRenderer;
 import com.example.arteam2.Renderer.PlaneRenderer;
-import com.example.arteam2.Renderer.PointCloudRenderer;
 import com.example.arteam2.Utility.FullScreenUtility;
 import com.example.arteam2.Utility.PermissionUtility;
+import com.example.arteam2.Utility.PointHandler;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.ar.core.ArCoreApk;
 import com.google.ar.core.Camera;
 import com.google.ar.core.Config;
@@ -34,16 +43,18 @@ public class MeasureActivity extends AppCompatActivity implements GLSurfaceView.
 	ScreenStatus screenStatus = new ScreenStatus();
 	
 	private BackgroundRenderer backgroundRenderer = new BackgroundRenderer();
-	private PointCloudRenderer pointCloudRenderer = new PointCloudRenderer();
 	private PlaneRenderer planeRenderer = new PlaneRenderer();
 	
+	Snackbar snackbar;
+	
 	private GLSurfaceView measureView;
+	private PointHandler pointHandler = new PointHandler();
 	
 	private Session session;
 	
 	private boolean userRequestedInstall = false;
-	
 	private boolean surfacedCreated = false;
+	private TextView numPointsView;
 	
 	@Override
 	public void onSurfaceCreated(GL10 gl10, EGLConfig eglConfig) {
@@ -58,11 +69,13 @@ public class MeasureActivity extends AppCompatActivity implements GLSurfaceView.
 		
 		try {
 			backgroundRenderer.whenGLCreate(this);
-			pointCloudRenderer.whenGLCreate(this);
 			planeRenderer.whenGLCreate(this);
+			
+			pointHandler.whenGLCreate(this);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		
 	}
 	
 	@Override
@@ -73,6 +86,8 @@ public class MeasureActivity extends AppCompatActivity implements GLSurfaceView.
 		GLES20.glViewport(0, 0, screenStatus.width, screenStatus.height);
 	}
 	
+	@RequiresApi(api = Build.VERSION_CODES.O)
+	@SuppressLint("ClickableViewAccessibility")
 	@Override
 	public void onDrawFrame(GL10 gl10) {
 		GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
@@ -103,13 +118,52 @@ public class MeasureActivity extends AppCompatActivity implements GLSurfaceView.
 			camera.getViewMatrix(viewMTX, 0);
 			
 			PointCloud pointCloud = frame.acquirePointCloud();
-			pointCloudRenderer.update(pointCloud);
-			pointCloudRenderer.draw(viewMTX, projMTX);
+			pointHandler.draw(pointCloud, viewMTX, projMTX);
 			
 		} catch (CameraNotAvailableException e) {
 			e.printStackTrace();
 			finish();
 		}
+		
+		
+		runOnUiThread(new Runnable() {
+			@SuppressLint("SetTextI18n")
+			@Override
+			public void run() {
+				switch (pointHandler.getMode()) {
+					case StanBy:
+						numPointsView.setVisibility(View.INVISIBLE);
+						snackbar.setText("터치하면 정보를 수집하기 시작합니다!");
+						snackbar.show();
+						break;
+					
+					case Collecting:
+						snackbar.dismiss();
+						numPointsView.setVisibility(View.VISIBLE);
+						numPointsView.setText("수집된 점의 개수 : " + pointHandler.getCollectedPointsNum());
+						if (pointHandler.hasEnoughPoint()) {
+//							pointHandler.filterPoints();
+							pointHandler.collectingEnd();
+						}
+						break;
+					
+					case CollectDone:
+						snackbar.show();
+						snackbar.setText("땅을 터치해 주세요!");
+						break;
+				}
+			}
+		});
+		
+		
+		measureView.setOnTouchListener(new View.OnTouchListener() {
+			@Override
+			public boolean onTouch(View v, MotionEvent event) {
+				if (pointHandler.getMode() == Bust.StanBy)
+					pointHandler.collectingStart();
+				return false;
+			}
+		});
 	}
 	
 	@Override
@@ -122,12 +176,17 @@ public class MeasureActivity extends AppCompatActivity implements GLSurfaceView.
 		setContentView(R.layout.activity_measure);
 		
 		measureView = findViewById(R.id.gl_surface_view);
+		numPointsView = findViewById(R.id.numPointsView);
 		
 		measureView.setPreserveEGLContextOnPause(true);
 		measureView.setEGLContextClientVersion(2);
 		measureView.setEGLConfigChooser(8, 8, 8, 8, 16, 0);
 		measureView.setRenderer(this);
 		measureView.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
+		
+		snackbar = Snackbar.make(findViewById(android.R.id.content),
+		                         "aaa",
+		                         Snackbar.LENGTH_INDEFINITE);
 	}
 	
 	@Override
@@ -188,39 +247,6 @@ public class MeasureActivity extends AppCompatActivity implements GLSurfaceView.
 	public void onBackPressed() {
 		super.onBackPressed();
 	}
-
-//	public class PlaneFinder extends AsyncTask<Object, ResponseForm.PlaneParam, ResponseForm.PlaneParam> {
-//		@Override
-//		p}rotected ResponseForm.PlaneParam doInBackground(Object... objects) {
-//			// Ready Point Cloud
-//			FloatBuffer points = pointCloudRenderer.finalPointBuffer;
-//
-//			// Ready Request Form
-//			RequestForm rf = new RequestForm();
-//
-//			rf.setPointBufferDescription(points.capacity() / 4, 16, 0); //pointcount, pointstride, pointoffset
-//			rf.setPointDataDescription(0.05f, 0.01f); //accuracy, meanDistance
-//			rf.setTargetROI(pointCloudRenderer.seedPointID, Math.max(z_dis * circleRad, 0.1f));//seedIndex,touchRadius
-//			rf.setAlgorithmParameter(RequestForm.SearchLevel.NORMAL, RequestForm.SearchLevel.NORMAL);//LatExt, RadExp
-//			Log.d("PointsBuffer", points.toString());
-//			FindSurfaceRequester fsr = new FindSurfaceRequester(REQUEST_URL, true);
-//			// Request Find Surface
-//			try {
-//				Log.d("PlaneFinder", "request");
-//				ResponseForm resp = fsr.request(rf, points);
-//				if (resp != null && resp.isSuccess()) {
-//					ResponseForm.PlaneParam param = resp.getParamAsPlane();
-//					Log.d("PlaneFinder", "request success");
-//					return param;
-//				} else {
-//					Log.d("PlaneFinder", "request fail");
-//				}
-//			} catch (Exception e) {
-//				e.printStackTrace();
-//			}
-//			return null;
-//		}
-//	}
 	
 	private boolean isPlaneExist() {
 		for (Plane plane : session.getAllTrackables(Plane.class)) {

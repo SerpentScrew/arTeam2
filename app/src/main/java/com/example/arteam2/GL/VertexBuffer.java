@@ -5,10 +5,10 @@ import android.opengl.GLES20;
 import java.nio.FloatBuffer;
 
 public class VertexBuffer implements GLObject {
-	private static final int BYTES_PER_FLOAT = Float.SIZE / 8; // float 는 몇바이트인지
-	private static final int FLOATS_PER_POINT = 4; // 한 점에 몇개의 수가 들어가는지
-	private static final int BYTES_PER_POINT = BYTES_PER_FLOAT * FLOATS_PER_POINT; // 한 점에 몇 바이트가 들어가는지
-	private static final int INITIAL_BUFFER_POINTS = 1000; // ?
+	private final int BYTES_PER_FLOAT = Float.SIZE / 8; // float 는 몇바이트인지
+	private final int FLOATS_PER_POINT = 4; // 한 점에 몇개의 수가 들어가는지
+	private final int BYTES_PER_POINT = BYTES_PER_FLOAT * FLOATS_PER_POINT; // 한 점에 몇 바이트가 들어가는지
+	private final int INITIAL_BUFFER_POINTS = 1000; // ?
 	private final String TAG = this.getClass().getName();
 	
 	private int bufferID;
@@ -25,7 +25,6 @@ public class VertexBuffer implements GLObject {
 		this.bind();
 		GLES20.glBufferData(GLES20.GL_ARRAY_BUFFER, bufferSize, null, glDrawWayEnum);
 		this.unBind();
-		System.out.println("////////////////// vb constructed");
 		GLSupport.checkError(TAG, "in VertexBuffer Constructor");
 	}
 	
@@ -67,7 +66,7 @@ public class VertexBuffer implements GLObject {
 		GLES20.glBufferSubData(
 				GLES20.GL_ARRAY_BUFFER, 0, numPoints * BYTES_PER_POINT, floatBuffer
 		                      );
-		GLSupport.checkError(TAG, "in VertexBuffer FillData");
 		this.unBind();
+		GLSupport.checkError(TAG, "in VertexBuffer FillData");
 	}
 }

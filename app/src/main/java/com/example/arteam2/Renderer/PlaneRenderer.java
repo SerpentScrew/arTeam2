@@ -19,7 +19,6 @@ import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 
-import com.example.arteam2.GL.GLSupport;
 import com.example.arteam2.GL.Shader;
 import com.example.arteam2.Utility.ShaderUtil;
 import com.google.ar.core.Plane;
@@ -148,8 +147,7 @@ public class PlaneRenderer {
 	/**
 	 * Updates the plane model transform matrix and extents.
 	 */
-	private void updatePlaneParameters(
-			float[] planeMatrix, float extentX, float extentZ, FloatBuffer boundary) {
+	private void updatePlaneParameters(float[] planeMatrix, float extentX, float extentZ, FloatBuffer boundary) {
 		System.arraycopy(planeMatrix, 0, modelMatrix, 0, 16);
 		if (boundary == null) {
 			vertexBuffer.limit(0);

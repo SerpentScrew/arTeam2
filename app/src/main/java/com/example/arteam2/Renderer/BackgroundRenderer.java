@@ -45,6 +45,7 @@ public class BackgroundRenderer {
 					-1.0f, +1.0f,
 					+1.0f, +1.0f,
 			};
+	
 	private FloatBuffer quadCoords;
 	private FloatBuffer quadTexCoords;
 	
@@ -143,7 +144,7 @@ public class BackgroundRenderer {
 	private void draw() {
 		GLES20.glDisable(GLES20.GL_DEPTH_TEST);
 		GLES20.glDepthMask(false);
-		//
+		
 		backGroundShader.setAttrib(texture, "a_Position", COORDS_PER_VERTEX, GLES20.GL_FLOAT, false, 0, quadCoords);
 		backGroundShader.setAttrib(texture, "a_TexCoord", TEXCOORDS_PER_VERTEX, GLES20.GL_FLOAT, false, 0, quadTexCoords);
 		
@@ -154,6 +155,5 @@ public class BackgroundRenderer {
 		
 		GLES20.glDepthMask(true);
 		GLES20.glEnable(GLES20.GL_DEPTH_TEST);
-		
 	}
 }

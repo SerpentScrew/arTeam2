@@ -25,7 +25,6 @@ public class Texture implements GLObject {
 		GLES20.glBindTexture(textureTarget, 0);
 		
 		GLSupport.checkError(TAG, "in Texture Constructor");
-		System.out.println("///////////////////////////// Texture constructed");
 	}
 	
 	@Override

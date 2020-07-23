@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">arTeam2</string>
+    <string name="press_to_start">화면을 터치하면 특징점들을 수집하기 시작합니다.</string>
 </resources>

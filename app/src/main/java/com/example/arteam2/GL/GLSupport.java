@@ -6,6 +6,8 @@ import android.util.Log;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+import java.util.ArrayList;
+import java.util.Map;
 
 //  https://developer.android.com/reference/android/opengl/GLES20
 
@@ -39,6 +41,46 @@ public class GLSupport {
 		ByteBuffer bb = ByteBuffer.allocateDirect(size);
 		bb.order(ByteOrder.nativeOrder());
 		fb = bb.asFloatBuffer();
+		return fb;
+	}
+	
+	public static FloatBuffer makeFloatBuffer(Map<Integer, float[]> map) {
+		FloatBuffer fb;
+		ByteBuffer bb = ByteBuffer.allocateDirect(map.size() * 4 * FLOAT_SIZE);
+		bb.order(ByteOrder.nativeOrder());
+		fb = bb.asFloatBuffer();
+		for (int id : map.keySet()) {
+			float[] tmp = {
+					map.get(id)[0], map.get(id)[1], map.get(id)[2], 1.0f,
+			};
+			fb.put(tmp);
+		}
+		fb.position(0);
+		return fb;
+	}
+	
+	public static FloatBuffer makeListFloatBuffer(Map<Integer, ArrayList<float[]>> map) {
+		int numElements = 0;
+		for (int id : map.keySet()) {
+			for (float[] mapElement : map.get(id)) {
+				numElements++;
+			}
+		}
+		if (numElements == 0) return null;
+		
+		FloatBuffer fb;
+		ByteBuffer bb = ByteBuffer.allocateDirect(map.size() * 4 * numElements * FLOAT_SIZE);
+		bb.order(ByteOrder.nativeOrder());
+		fb = bb.asFloatBuffer();
+		for (int id : map.keySet()) {
+			for (float[] mapElement : map.get(id)) {
+				float[] tmp = {
+						mapElement[0], mapElement[1], mapElement[2], 1.0f,
+				};
+				fb.put(tmp);
+			}
+		}
+		fb.position(0);
 		return fb;
 	}
 }
