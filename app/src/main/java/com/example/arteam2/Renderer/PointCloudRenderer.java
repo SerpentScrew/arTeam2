@@ -61,4 +61,15 @@ public class PointCloudRenderer {
 		Renderer.draw(pointCloudShader, GLES20.GL_POINTS, 0, floatBuffer.remaining() / FLOATS_PER_POINT);
 		pointCloudShader.freeAtrib(pointCloudVBO, "a_Position");
 	}
+	
+	@RequiresApi(api = Build.VERSION_CODES.O)
+	public void draw(FloatBuffer floatBuffer, float[] modelViewProjection, Color color, float pointSize) {
+		pointCloudVBO.fillData(floatBuffer);
+		pointCloudShader.setAttrib(pointCloudVBO, "a_Position", 4, GLES20.GL_FLOAT, false, BYTES_PER_POINT, 0);
+		pointCloudShader.setUniform("u_Color", color.red(), color.green(), color.blue(), color.alpha());
+		pointCloudShader.setUniform("u_ModelViewProjection", 1, false, modelViewProjection, 0);
+		pointCloudShader.setUniform("u_PointSize", pointSize);
+		Renderer.draw(pointCloudShader, GLES20.GL_POINTS, 0, floatBuffer.remaining() / FLOATS_PER_POINT);
+		pointCloudShader.freeAtrib(pointCloudVBO, "a_Position");
+	}
 }

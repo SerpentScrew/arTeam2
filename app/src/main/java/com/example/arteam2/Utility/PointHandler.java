@@ -4,12 +4,14 @@ import android.content.Context;
 import android.graphics.Color;
 import android.opengl.Matrix;
 import android.os.Build;
+import android.util.Log;
 
 import androidx.annotation.RequiresApi;
 
 import com.example.arteam2.Bust;
 import com.example.arteam2.GL.GLSupport;
 import com.example.arteam2.Renderer.PointCloudRenderer;
+import com.google.ar.core.Camera;
 import com.google.ar.core.PointCloud;
 
 import java.nio.FloatBuffer;
@@ -25,11 +27,14 @@ public class PointHandler {
 	private final float FINE_CONFIDENCE = 0.3f;
 	public Map<Integer, ArrayList<float[]>> allPoints;
 	public Map<Integer, float[]> filteredPoints;
-	public FloatBuffer filteredBuffer;
+	public FloatBuffer filteredBuffer = null;
+	public FloatBuffer targetedBuffer = null;
 	private PointCloudRenderer pcRenderer;
 	private Bust mode = Bust.StanBy;
 	
 	private boolean isFiltered = false;
+	private boolean isRetry = false;
+	private boolean isSucceedPickPoint = false;
 	
 	public void whenGLCreate(Context context) {
 		allPoints = new HashMap<>();
@@ -45,21 +50,57 @@ public class PointHandler {
 		float[] modelViewProjection = new float[16];
 		Matrix.multiplyMM(modelViewProjection, 0, cameraPerspective, 0, cameraView, 0);
 		
-		int pointColor = Color.BLACK;
 		switch (mode) {
 			case Collecting:
-				pointColor = Color.RED;
 				push(pointCloud.getIds(), pointCloud.getPoints());
-				pcRenderer.draw(pointCloud.getPoints(), modelViewProjection, Color.valueOf(pointColor));
+				pcRenderer.draw(pointCloud.getPoints(), modelViewProjection, Color.valueOf(Color.RED));
 				break;
 			
 			case CollectDone:
-				pointColor = Color.CYAN;
 				if (!isFiltered()) filterPoints();
-				pcRenderer.draw(filteredBuffer, modelViewProjection, Color.valueOf(pointColor));
+				if (filteredBuffer == null || !filteredBuffer.hasRemaining()) break;
+				pcRenderer.draw(filteredBuffer, modelViewProjection, Color.valueOf(Color.CYAN));
 				break;
+			
+			case FindingFloor:
+				if (targetedBuffer == null || !targetedBuffer.hasRemaining()) break;
+				pcRenderer.draw(targetedBuffer, modelViewProjection, Color.valueOf(Color.GREEN), 20.0f);
 		}
 		
+	}
+	
+	public void pickToEraseFloor(float xPx, float yPx, int width, int height, Camera camera) {
+		float[] ray = CoreSystem.screenPointToWorldRay(xPx, yPx, width, height, camera);
+		
+		float thresholdDistance = 0.01f; // 10cm = 0.1m * 0.1m = 0.01f
+		
+		int seedPointID = -1;
+		float[] seedPoint = new float[]{0, 0, 0, Float.MAX_VALUE};
+		
+		for (int i = 0; i < filteredBuffer.remaining(); i += 4) {
+			float[] point = new float[]{filteredBuffer.get(i), filteredBuffer.get(i + 1), filteredBuffer.get(i + 2), filteredBuffer.get(i + 3)};
+			float[] product = new float[]{point[0] - ray[0], point[1] - ray[1], point[2] - ray[2], 1.0f};
+			
+			float distanceSq = (float) (java.lang.Math.pow(product[0], 2) + java.lang.Math.pow(product[1], 2) + java.lang.Math.pow(product[2], 2));// length between camera and point
+			float innerProduct = ray[3] * product[0] + ray[4] * product[1] + ray[5] * product[2];
+			distanceSq = distanceSq - (innerProduct * innerProduct);  //c^2 - a^2 = b^2
+			
+			// determine candidate points
+			if (distanceSq < thresholdDistance && distanceSq < seedPoint[3]) {
+				seedPoint[0] = point[0];
+				seedPoint[1] = point[1];
+				seedPoint[2] = point[2];
+				seedPoint[3] = distanceSq;
+				seedPointID = i / 4;
+				isSucceedPickPoint = true;
+				targetedBuffer = GLSupport.makeFloatBuffer(seedPoint);
+			}
+		}
+		if (!isSucceedPickPoint) {
+			isRetry = true;
+			collectingEnd();
+		}
+		Log.d("pickSeed", String.format("%.2f %.2f %.2f : %d", seedPoint[0], seedPoint[1], seedPoint[2], seedPointID));
 	}
 	
 	public void push(IntBuffer ID, FloatBuffer pointCloud) {
@@ -147,7 +188,6 @@ public class PointHandler {
 		filteredBuffer = GLSupport.makeFloatBuffer(filteredPoints);
 	}
 	
-	
 	public void collectingStart() {
 		mode = Bust.Collecting;
 	}
@@ -156,8 +196,20 @@ public class PointHandler {
 		mode = Bust.CollectDone;
 	}
 	
+	public void findFloorStart() {
+		mode = Bust.FindingFloor;
+	}
+	
+	public void findFloorEnd() {
+		mode = Bust.FoundFloor;
+	}
+	
 	public Bust getMode() {
 		return mode;
+	}
+	
+	public boolean isRetry() {
+		return isRetry;
 	}
 	
 	public int getCollectedPointsNum() {
