@@ -3,10 +3,13 @@ package com.example.arteam2.GL;
 import android.opengl.GLES20;
 import android.util.Log;
 
+import com.example.arteam2.Utility.Math;
+
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -63,6 +66,21 @@ public class GLSupport {
 		return fb;
 	}
 	
+	public static FloatBuffer makeFloatBuffer(ArrayList<float[]> list) {
+		FloatBuffer fb;
+		ByteBuffer bb = ByteBuffer.allocateDirect(list.size() * 4 * FLOAT_SIZE);
+		bb.order(ByteOrder.nativeOrder());
+		fb = bb.asFloatBuffer();
+		for (float[] point : list) {
+			float[] tmp = {
+					point[0], point[1], point[2], 1.0f,
+			};
+			fb.put(tmp);
+		}
+		fb.position(0);
+		return fb;
+	}
+	
 	public static FloatBuffer makeListFloatBuffer(Map<Integer, ArrayList<float[]>> map) {
 		int numElements = 0;
 		for (int id : map.keySet()) {
@@ -86,6 +104,18 @@ public class GLSupport {
 		}
 		fb.position(0);
 		return fb;
+	}
+	
+	public static HashMap<Integer, float[]> copyMap(HashMap<Integer, float[]> original) {
+		HashMap<Integer, float[]> copy = new HashMap<Integer, float[]>();
+		for (Map.Entry<Integer, float[]> entry : original.entrySet()) {
+			float[] tmp = new float[entry.getValue().length];
+			for (int i = 0; i < entry.getValue().length; ++i) {
+				tmp[i] = entry.getValue()[i];
+			}
+			copy.put(entry.getKey(), tmp);
+		}
+		return copy;
 	}
 }
 

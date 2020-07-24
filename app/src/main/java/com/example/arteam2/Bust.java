@@ -5,5 +5,11 @@ public enum Bust {
 	Collecting,
 	CollectDone,
 	FindingFloor,
-	FoundFloor
+	FoundFloor,
+	DeletingFloor,
+	FloorDeleted,
+	OrthoProject,
+	FindingOrthoFloor,
+	FoundOrthoFloor,
+	FailedFindOrthoFloor,
 }

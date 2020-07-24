@@ -1,102 +1,73 @@
 package com.example.arteam2.Utility;
 
-import android.util.Log;
-
 public class Math {
 	private static final String TAG = Math.class.getName();
 	
-	static class Vec3 {
-		private float[] vec = new float[4];
-		
-		public Vec3() {
-			for (float num : vec) {
-				num = 0.0f;
-			}
-		}
-		
-		public Vec3(float a, float b, float c) {
-			vec[0] = a;
-			vec[1] = b;
-			vec[2] = c;
-		}
-		
-		public Vec3(float[] floats) {
-			switch (floats.length) {
-				case 0:
-					for (int i = 0; i < 3; ++i) {
-						vec[i] = 0.0f;
-					}
-					break;
-				case 1:
-					System.arraycopy(floats, 0, vec, 0, 1);
-					vec[2] = 0.0f;
-					vec[3] = 0.0f;
-					break;
-				case 2:
-					System.arraycopy(floats, 0, vec, 0, 2);
-					vec[3] = 0.0f;
-					break;
-				case 3:
-					System.arraycopy(floats, 0, vec, 0, 3);
-					break;
-				default:
-					Log.d(TAG, "Vec4: has more than 4 elements");
-					System.exit(1);
-			}
-		}
-		
-		public float get(int i) {
-			return this.vec[i];
-		}
-		
-		public float inner(Vec3 vec3) {
-			return (vec[0] * vec3.get(0)) *
-			       (vec[1] * vec3.get(1)) *
-			       (vec[2] * vec3.get(2));
-		}
-		
-		public Vec3 outer(Vec3 vec3) {
-			float[] ret = new float[3];
-			ret[0] = (vec[1] * vec3.get(2)) - (vec[2] * vec3.get(1));
-			ret[1] = (vec[2] * vec3.get(0)) - (vec[0] * vec3.get(2));
-			ret[2] = (vec[0] * vec3.get(1)) - (vec[1] * vec3.get(0));
-			return new Vec3(ret);
-		}
-		
-		public Vec3 add(Vec3 vec3) {
-			float[] ret = new float[3];
-			for (int i = 0; i < 3; ++i) {
-				ret[i] = vec[i] + vec3.get(i);
-			}
-			return new Vec3(ret);
-		}
-		
-		public Vec3 sub(Vec3 vec3) {
-			float[] ret = new float[3];
-			for (int i = 0; i < 3; ++i) {
-				ret[i] = vec[i] - vec3.get(i);
-			}
-			return new Vec3(ret);
-		}
-		
-		public float size() {
-			return (float) java.lang.Math.sqrt(
-					(vec[0] * vec[0]) + (vec[1] * vec[1]) + (vec[2] * vec[2])
-			                                  );
-		}
-		
-		public void normalize() {
-			for (int i = 0; i < 3; ++i) {
-				vec[i] /= this.size();
-			}
-		}
-		
-		public Vec3 IDP(Vec3 vec3, int m, int n) {
-			float[] ret = new float[3];
-			for (int i = 0; i < 3; ++i) {
-				ret[i] = (m * vec3.get(i) + n * vec[i]) / (m + n);
-			}
-			return new Vec3(ret);
-		}
+	static public float lengthBetween(float[] a, float[] b) {
+		float ans = 0;
+		ans += (a[0] - b[0]) * (a[0] - b[0]);
+		ans += (a[1] - b[1]) * (a[1] - b[1]);
+		ans += (a[2] - b[2]) * (a[2] - b[2]);
+		return (float) java.lang.Math.sqrt(ans);
 	}
+	
+	static public float vectorSize(float[] a) {
+		return (float) java.lang.Math.sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]);
+	}
+	
+	static public float inner(float[] a, float[] b) {
+		return (a[0] * b[0]) + (a[1] * b[1]) + (a[2] * b[2]);
+	}
+	
+	static public float inner(float[] a, float[] b, int i) {
+		return (a[0] * b[0 + i]) + (a[1] * b[1 + i]) + (a[2] * b[2 + i]);
+	}
+	
+	static public float[] outer(float[] a, float[] b) {
+		float[] result = new float[3];
+		
+		result[0] = a[1] * b[2] - a[2] * b[1];
+		result[1] = a[2] * b[0] - a[0] * b[2];
+		result[2] = a[0] * b[1] - a[1] * b[0];
+		
+		return result;
+	}
+	
+	static public void normalize(float[] a) {
+		a[0] /= vectorSize(a);
+		a[1] /= vectorSize(a);
+		a[2] /= vectorSize(a);
+	}
+	
+	static public float[] IDP(float[] a, float[] b, int m, int n) {  // 내분점 : internally dividing point
+		float[] idp = new float[]{0, 0, 0};
+		int mn = m + n;
+		
+		idp[0] = (m * b[0] + n * a[0]) / mn;
+		idp[1] = (m * b[1] + n * a[1]) / mn;
+		idp[2] = (m * b[2] + n * a[2]) / mn;
+		
+		return idp;
+	}
+	
+	static public float[] sub(float[] a, float[] b) {
+		if (a.length == 4) {
+			float[] result = new float[4];
+			
+			result[0] = a[0] - b[0];
+			result[1] = a[1] - b[1];
+			result[2] = a[2] - b[2];
+			result[3] = 1;
+			
+			return result;
+		}
+		float[] result = new float[3];
+		
+		result[0] = a[0] - b[0];
+		result[1] = a[1] - b[1];
+		result[2] = a[2] - b[2];
+		
+		return result;
+	}
+	
 }

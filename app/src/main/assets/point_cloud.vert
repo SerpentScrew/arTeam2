@@ -9,5 +9,7 @@ varying vec4 v_Color;
 void main() {
     v_Color = u_Color;
     gl_Position = u_ModelViewProjection * vec4(a_Position.xyz, 1.0);
-    gl_PointSize = u_PointSize;
+    if (u_PointSize != -1.0) {
+        gl_PointSize = u_PointSize;
+    }
 }
