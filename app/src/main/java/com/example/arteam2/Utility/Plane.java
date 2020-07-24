@@ -54,6 +54,27 @@ public class Plane {
 		
 	}
 	
+	public float[] getll() {
+		return ll;
+	}
+	
+	public float[] getlr() {
+		return lr;
+	}
+	
+	public float[] getul() {
+		return ul;
+	}
+	
+	public float[] getur() {
+		return ur;
+	}
+	
+	public float[] getNormal() {
+		return normal;
+	}
+	
+	
 	public boolean checkNormal(float[] z_dir) {
 //		Pose pose = camera.getPose();
 //		float[] z_dir = pose.getZAxis();

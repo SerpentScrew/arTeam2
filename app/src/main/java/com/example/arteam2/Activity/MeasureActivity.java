@@ -39,7 +39,8 @@ import javax.microedition.khronos.opengles.GL10;
 
 public class MeasureActivity extends AppCompatActivity implements GLSurfaceView.Renderer {
 	ScreenStatus screenStatus = new ScreenStatus();
-	CoreSystem.FindSurface findSurface = null;
+	CoreSystem.FindFloor findFloor = null;
+	CoreSystem.FindOrthoFloor findOrthoFloor = null;
 	
 	private BackgroundRenderer backgroundRenderer = new BackgroundRenderer();
 	
@@ -67,7 +68,7 @@ public class MeasureActivity extends AppCompatActivity implements GLSurfaceView.
 		
 		surfacedCreated = true;
 		backgroundRenderer.whenGLCreate(this);
-		
+		pointHandler.whenGLCreate(this);
 		
 	}
 	
@@ -118,7 +119,6 @@ public class MeasureActivity extends AppCompatActivity implements GLSurfaceView.
 			finish();
 		}
 		
-		
 		runOnUiThread(new Runnable() {
 			@SuppressLint("SetTextI18n")
 			@Override
@@ -150,7 +150,41 @@ public class MeasureActivity extends AppCompatActivity implements GLSurfaceView.
 						break;
 					
 					case FoundFloor:
-						snackbar.setText("땅을 찾았습니다.");
+						snackbar.setText("땅을 찾았습니다. 터치하세요");
+						snackbar.show();
+						break;
+					
+					case DeletingFloor:
+						snackbar.setText("물체만 남기기 위해 땅을 삭제합니다. 터치하여 진행");
+						snackbar.show();
+						break;
+					
+					case FloorDeleted:
+						snackbar.setText("이게 땅 지워지고 나머지 모습임. 터치하여 진행");
+						snackbar.show();
+						break;
+					
+					case OrthoProject:
+						if (pointHandler.getBoxHeight() != -1) {
+							numPointsView.setText("박스 높이 : " + (int) (pointHandler.getBoxHeight() * 100) + "cm");
+							numPointsView.setVisibility(View.VISIBLE);
+						}
+						
+						snackbar.setText("이게 나머지들 정사영 된 모습임. 터치");
+						snackbar.show();
+						break;
+					
+					case FindingOrthoFloor:
+						snackbar.setText("물체의 밑면을 구하는 중. 터치");
+						snackbar.show();
+						break;
+					
+					case FailedFindOrthoFloor:
+						snackbar.setText(R.string.not_enough_survived_featurePoint);
+						snackbar.show();
+					
+					case FoundOrthoFloor:
+						snackbar.setText("물체의 밑면 구함. 끝");
 						snackbar.show();
 				}
 			}
@@ -173,21 +207,44 @@ public class MeasureActivity extends AppCompatActivity implements GLSurfaceView.
 								measureView.getMeasuredWidth(), measureView.getMeasuredHeight(),
 								camera
 						                             );
-						System.out.println("finding floor");
-						if (findSurface == null) {
-							findSurface = new CoreSystem.FindSurface(pointHandler, camera);
+						if (findFloor == null) {
+							findFloor = new CoreSystem.FindFloor(pointHandler, camera);
 						}
-						if (findSurface.getStatus() == AsyncTask.Status.FINISHED
-						    || findSurface.getStatus() == AsyncTask.Status.RUNNING) {
-							System.out.println("touch findFloor!!");
-							findSurface.cancel(true);
-							findSurface = new CoreSystem.FindSurface(pointHandler, camera);
+						
+						if (findFloor.getStatus() == AsyncTask.Status.FINISHED
+						    || findFloor.getStatus() == AsyncTask.Status.RUNNING) {
+							findFloor.cancel(true);
+							findFloor = new CoreSystem.FindFloor(pointHandler, camera);
 						}
-						System.out.println("executed");
-						findSurface.execute();
+						
+						findFloor.execute();
 						pointHandler.findFloorStart();
 						break;
 					case FindingFloor:
+						
+						break;
+					case FoundFloor:
+						pointHandler.deleteFloor();
+						pointHandler.deletingFloorStart();
+						break;
+					case DeletingFloor:
+						pointHandler.deletingFloorEnd();
+						break;
+					case FloorDeleted:
+						pointHandler.orThoObject();
+						pointHandler.orthoProjectingStart();
+						break;
+					case OrthoProject:
+						pointHandler.findOrthoFloorStart();
+						break;
+					case FindingOrthoFloor:
+						pointHandler.makeFunCube();
+						pointHandler.findOrthoFloorEnd();
+						break;
+					case FoundOrthoFloor:
+						break;
+					case FailedFindOrthoFloor:
+						pointHandler.collectingStart();
 						break;
 				}
 				return false;

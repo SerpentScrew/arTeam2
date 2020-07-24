@@ -4,4 +4,6 @@
     <string name="press_ground">땅을 터치하여 주세요.</string>
     <string name="press_ground_noFeaturePoint">근처에 특징점이 없습니다. 다른 곳을 터치해 주세요.</string>
     <string name="press_ground_findSurfFailed">땅을 찾는데 실패하였습니다. 다시 터치해 주세요.</string>
+    <string name="not_enough_survived_featurePoint">살아남은 특징점들의 수가 너무 부족. 터치하면 처음부터 다시함.</string>
+
 </resources>
