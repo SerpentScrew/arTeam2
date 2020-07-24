@@ -1,4 +1,7 @@
 <resources>
     <string name="app_name">arTeam2</string>
     <string name="press_to_start">화면을 터치하면 특징점들을 수집하기 시작합니다.</string>
+    <string name="press_ground">땅을 터치하여 주세요.</string>
+    <string name="press_ground_noFeaturePoint">근처에 특징점이 없습니다. 다른 곳을 터치해 주세요.</string>
+    <string name="press_ground_findSurfFailed">땅을 찾는데 실패하였습니다. 다시 터치해 주세요.</string>
 </resources>

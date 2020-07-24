@@ -10,7 +10,8 @@ import androidx.annotation.RequiresApi;
 
 import com.example.arteam2.Bust;
 import com.example.arteam2.GL.GLSupport;
-import com.example.arteam2.Renderer.PointCloudRenderer;
+import com.example.arteam2.R;
+import com.example.arteam2.Renderer.Renderer;
 import com.google.ar.core.Camera;
 import com.google.ar.core.PointCloud;
 
@@ -23,22 +24,30 @@ import java.util.Map;
 import java.util.Objects;
 
 public class PointHandler {
-	private final int REQUIRED_POINTS = 1000;
-	private final float FINE_CONFIDENCE = 0.3f;
-	public Map<Integer, ArrayList<float[]>> allPoints;
-	public Map<Integer, float[]> filteredPoints;
-	public FloatBuffer filteredBuffer = null;
-	public FloatBuffer targetedBuffer = null;
-	private PointCloudRenderer pcRenderer;
+	public final int REQUIRED_POINTS = 3000;
+	public final float FINE_CONFIDENCE = 0.3f;
+	private Map<Integer, ArrayList<float[]>> allPoints;
+	private Map<Integer, float[]> filteredPoints;
+	private FloatBuffer filteredBuffer = null;
+	private FloatBuffer targetedBuffer = null;
+	private Renderer pcRenderer;
 	private Bust mode = Bust.StanBy;
+	private int seedPointID = -1;
+	
+	private float[] planeVertex = null;
+	
+	private float z_dis = Float.MIN_VALUE;
 	
 	private boolean isFiltered = false;
-	private boolean isRetry = false;
+	
+	private int collectDoneMsg = R.string.press_ground;
+	// TODO : 이거 그냥 디버그용. 지우기
+	private float[] points = null;
 	
 	public void whenGLCreate(Context context) {
 		allPoints = new HashMap<>();
 		filteredPoints = new HashMap<>();
-		pcRenderer = new PointCloudRenderer();
+		pcRenderer = new Renderer();
 		pcRenderer.whenGLCreate(context);
 	}
 	
@@ -49,23 +58,39 @@ public class PointHandler {
 		float[] modelViewProjection = new float[16];
 		Matrix.multiplyMM(modelViewProjection, 0, cameraPerspective, 0, cameraView, 0);
 		
+		
+		// TODO : 쓰레드가 널 참조하지 않게 하는 법 모르겠어서 그냥 순서도 식으로 일단 짬
+		// TODO : 간지나게 바꿀 필요 있음
 		switch (mode) {
 			case Collecting:
 				push(pointCloud.getIds(), pointCloud.getPoints());
-				pcRenderer.draw(pointCloud.getPoints(), modelViewProjection, Color.valueOf(Color.RED));
+				pcRenderer.pointDraw(pointCloud.getPoints(), modelViewProjection, Color.valueOf(Color.RED));
 				break;
 			
 			case CollectDone:
 				if (!isFiltered()) filterPoints();
 				if (filteredBuffer == null || !filteredBuffer.hasRemaining()) break;
-				pcRenderer.draw(filteredBuffer, modelViewProjection, Color.valueOf(Color.CYAN));
+				pcRenderer.pointDraw(filteredBuffer, modelViewProjection, Color.valueOf(Color.CYAN));
 				break;
 			
 			case FindingFloor:
 				if (targetedBuffer == null || !targetedBuffer.hasRemaining()) break;
-				pcRenderer.draw(targetedBuffer, modelViewProjection, Color.valueOf(Color.GREEN), 20.0f);
+				pcRenderer.pointDraw(targetedBuffer, modelViewProjection, Color.valueOf(Color.GREEN), 20.0f);
+				break;
+			
+			case FoundFloor:
+				if (points == null) break;
+				System.out.println("points!!!!");
+				pcRenderer.planeDraw(
+						GLSupport.makeFloatBuffer(points), modelViewProjection, Color.valueOf(Color.YELLOW)
+				                    );
 		}
 		
+	}
+	
+	// TODO : 이거 그냥 디버그용. 지우기
+	public void setFloor4Points(float[] points) {
+		this.points = points;
 	}
 	
 	public void pickToEraseFloor(float xPx, float yPx, int width, int height, Camera camera) {
@@ -74,7 +99,6 @@ public class PointHandler {
 		
 		float thresholdDistance = 0.01f; // 10cm = 0.1m * 0.1m = 0.01f
 		
-		int seedPointID = -1;
 		float[] seedPoint = new float[]{0, 0, 0, Float.MAX_VALUE};
 		
 		for (int i = 0; i < filteredBuffer.remaining(); i += 4) {
@@ -97,10 +121,16 @@ public class PointHandler {
 			}
 		}
 		if (!isSucceedPickPoint) {
-			isRetry = true;
+			setCollectDoneMsg(R.string.press_ground_noFeaturePoint);
 			collectingEnd();
+			return;
 		}
+		z_dis = seedPoint[2];
 		Log.d("pickSeed", String.format("%.2f %.2f %.2f : %d", seedPoint[0], seedPoint[1], seedPoint[2], seedPointID));
+	}
+	
+	public void updatePlaneVertex(float[] planeVertex) {
+		this.planeVertex = planeVertex;
 	}
 	
 	public void push(IntBuffer ID, FloatBuffer pointCloud) {
@@ -204,12 +234,21 @@ public class PointHandler {
 		mode = Bust.FoundFloor;
 	}
 	
+	
+	/*
+	이하 그냥 getters. 볼 필요 x
+	 */
+	
+	public int getCollectDoneMsg() {
+		return collectDoneMsg;
+	}
+	
 	public Bust getMode() {
 		return mode;
 	}
 	
-	public boolean isRetry() {
-		return isRetry;
+	public void setCollectDoneMsg(int collectDoneMsg) {
+		this.collectDoneMsg = collectDoneMsg;
 	}
 	
 	public int getCollectedPointsNum() {
@@ -222,5 +261,13 @@ public class PointHandler {
 	
 	public boolean isFiltered() {
 		return isFiltered;
+	}
+	
+	public FloatBuffer getFilteredBuffer() {
+		return filteredBuffer;
+	}
+	
+	public int getSeedPointID() {
+		return seedPointID;
 	}
 }

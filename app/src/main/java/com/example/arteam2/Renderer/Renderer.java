@@ -21,14 +21,13 @@ import android.os.Build;
 
 import androidx.annotation.RequiresApi;
 
-import com.example.arteam2.GL.Renderer;
 import com.example.arteam2.GL.Shader;
 import com.example.arteam2.GL.VertexBuffer;
 import com.google.ar.core.PointCloud;
 
 import java.nio.FloatBuffer;
 
-public class PointCloudRenderer {
+public class Renderer {
 	private static final String TAG = PointCloud.class.getSimpleName();
 	
 	private static final String VERTEX_SHADER_PATH = "point_cloud.vert";
@@ -42,7 +41,7 @@ public class PointCloudRenderer {
 	
 	Shader pointCloudShader;
 	
-	public PointCloudRenderer() {
+	public Renderer() {
 	}
 	
 	public void whenGLCreate(Context context) {
@@ -52,24 +51,35 @@ public class PointCloudRenderer {
 	}
 	
 	@RequiresApi(api = Build.VERSION_CODES.O)
-	public void draw(FloatBuffer floatBuffer, float[] modelViewProjection, Color color) {
+	public void pointDraw(FloatBuffer floatBuffer, float[] modelViewProjection, Color color) {
 		pointCloudVBO.fillData(floatBuffer);
 		pointCloudShader.setAttrib(pointCloudVBO, "a_Position", 4, GLES20.GL_FLOAT, false, BYTES_PER_POINT, 0);
 		pointCloudShader.setUniform("u_Color", color.red(), color.green(), color.blue(), color.alpha());
 		pointCloudShader.setUniform("u_ModelViewProjection", 1, false, modelViewProjection, 0);
 		pointCloudShader.setUniform("u_PointSize", 10.0f);
-		Renderer.draw(pointCloudShader, GLES20.GL_POINTS, 0, floatBuffer.remaining() / FLOATS_PER_POINT);
+		com.example.arteam2.GL.Renderer.draw(pointCloudShader, GLES20.GL_POINTS, 0, floatBuffer.remaining() / FLOATS_PER_POINT);
 		pointCloudShader.freeAtrib(pointCloudVBO, "a_Position");
 	}
 	
 	@RequiresApi(api = Build.VERSION_CODES.O)
-	public void draw(FloatBuffer floatBuffer, float[] modelViewProjection, Color color, float pointSize) {
+	public void pointDraw(FloatBuffer floatBuffer, float[] modelViewProjection, Color color, float pointSize) {
 		pointCloudVBO.fillData(floatBuffer);
 		pointCloudShader.setAttrib(pointCloudVBO, "a_Position", 4, GLES20.GL_FLOAT, false, BYTES_PER_POINT, 0);
 		pointCloudShader.setUniform("u_Color", color.red(), color.green(), color.blue(), color.alpha());
 		pointCloudShader.setUniform("u_ModelViewProjection", 1, false, modelViewProjection, 0);
 		pointCloudShader.setUniform("u_PointSize", pointSize);
-		Renderer.draw(pointCloudShader, GLES20.GL_POINTS, 0, floatBuffer.remaining() / FLOATS_PER_POINT);
+		com.example.arteam2.GL.Renderer.draw(pointCloudShader, GLES20.GL_POINTS, 0, floatBuffer.remaining() / FLOATS_PER_POINT);
+		pointCloudShader.freeAtrib(pointCloudVBO, "a_Position");
+	}
+	
+	@RequiresApi(api = Build.VERSION_CODES.O)
+	public void planeDraw(FloatBuffer floatBuffer, float[] modelViewProjection, Color color) {
+		pointCloudVBO.fillData(floatBuffer);
+		pointCloudShader.setAttrib(pointCloudVBO, "a_Position", 4, GLES20.GL_FLOAT, false, BYTES_PER_POINT, 0);
+		pointCloudShader.setUniform("u_Color", color.red(), color.green(), color.blue(), 0.5f);
+		pointCloudShader.setUniform("u_ModelViewProjection", 1, false, modelViewProjection, 0);
+		pointCloudShader.setUniform("u_PointSize", -1.0f);
+		com.example.arteam2.GL.Renderer.blendDraw(pointCloudShader, GLES20.GL_TRIANGLES, 0, floatBuffer.remaining() / FLOATS_PER_POINT);
 		pointCloudShader.freeAtrib(pointCloudVBO, "a_Position");
 	}
 }

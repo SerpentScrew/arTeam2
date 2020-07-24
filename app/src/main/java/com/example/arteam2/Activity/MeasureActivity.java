@@ -3,6 +3,7 @@ package com.example.arteam2.Activity;
 import android.annotation.SuppressLint;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -16,7 +17,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.arteam2.R;
 import com.example.arteam2.Renderer.BackgroundRenderer;
-import com.example.arteam2.Renderer.PlaneRenderer;
+import com.example.arteam2.Utility.CoreSystem;
 import com.example.arteam2.Utility.FullScreenUtility;
 import com.example.arteam2.Utility.PermissionUtility;
 import com.example.arteam2.Utility.PointHandler;
@@ -31,7 +32,6 @@ import com.google.ar.core.Session;
 import com.google.ar.core.TrackingState;
 import com.google.ar.core.exceptions.CameraNotAvailableException;
 
-import java.io.IOException;
 import java.util.Objects;
 
 import javax.microedition.khronos.egl.EGLConfig;
@@ -39,9 +39,9 @@ import javax.microedition.khronos.opengles.GL10;
 
 public class MeasureActivity extends AppCompatActivity implements GLSurfaceView.Renderer {
 	ScreenStatus screenStatus = new ScreenStatus();
+	CoreSystem.FindSurface findSurface = null;
 	
 	private BackgroundRenderer backgroundRenderer = new BackgroundRenderer();
-	private PlaneRenderer planeRenderer = new PlaneRenderer();
 	
 	Snackbar snackbar;
 	
@@ -66,15 +66,8 @@ public class MeasureActivity extends AppCompatActivity implements GLSurfaceView.
 		GLES20.glEnable(GLES20.GL_DEPTH_TEST);
 		
 		surfacedCreated = true;
+		backgroundRenderer.whenGLCreate(this);
 		
-		try {
-			backgroundRenderer.whenGLCreate(this);
-			planeRenderer.whenGLCreate(this);
-			
-			pointHandler.whenGLCreate(this);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
 		
 	}
 	
@@ -147,15 +140,18 @@ public class MeasureActivity extends AppCompatActivity implements GLSurfaceView.
 						break;
 					
 					case CollectDone:
-						snackbar.setText(pointHandler.isRetry() ?
-								                 "근처에 특징점이 없습니다. 다른 곳을 터치해 주세요." :
-								                 "땅을 터치해 주세요!");
+						snackbar.setText(pointHandler.getCollectDoneMsg());
 						snackbar.show();
 						break;
+					
 					case FindingFloor:
 						snackbar.setText("땅을 찾는 중입니다.");
 						snackbar.show();
 						break;
+					
+					case FoundFloor:
+						snackbar.setText("땅을 찾았습니다.");
+						snackbar.show();
 				}
 			}
 		});
@@ -172,12 +168,26 @@ public class MeasureActivity extends AppCompatActivity implements GLSurfaceView.
 						break;
 					case CollectDone:
 						if (camera == null) break;
-						pointHandler.findFloorStart();
 						pointHandler.pickToEraseFloor(
 								event.getX(), event.getY(),
 								measureView.getMeasuredWidth(), measureView.getMeasuredHeight(),
 								camera
 						                             );
+						System.out.println("finding floor");
+						if (findSurface == null) {
+							findSurface = new CoreSystem.FindSurface(pointHandler, camera);
+						}
+						if (findSurface.getStatus() == AsyncTask.Status.FINISHED
+						    || findSurface.getStatus() == AsyncTask.Status.RUNNING) {
+							System.out.println("touch findFloor!!");
+							findSurface.cancel(true);
+							findSurface = new CoreSystem.FindSurface(pointHandler, camera);
+						}
+						System.out.println("executed");
+						findSurface.execute();
+						pointHandler.findFloorStart();
+						break;
+					case FindingFloor:
 						break;
 				}
 				return false;
