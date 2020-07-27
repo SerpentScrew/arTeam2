@@ -11,6 +11,8 @@ import com.example.arteam2.R;
 import com.google.ar.core.Camera;
 
 import java.nio.FloatBuffer;
+import java.util.Map;
+import java.util.Objects;
 
 public class CoreSystem {
 	static public float[] screenPointToWorldRay(float xPx, float yPx, int width, int height, Camera camera) {
@@ -130,76 +132,169 @@ public class CoreSystem {
 		}
 	}
 	
-	static public class FindOrthoFloor extends AsyncTask<Object, ResponseForm.PlaneParam, ResponseForm.PlaneParam> {
-		private static final String REQUEST_URL = "https://developers.curvsurf.com/FindSurface/plane"; // Plane searching server address
-		private PointHandler pointHandler = null;
-		private Camera camera = null;
-		private float circleRad = 0.25f;
-		private float z_dis = 0;
+	static public float[] avgOfPointMap(Map<Integer, float[]> map) {
+		if (map == null) return null;
 		
-		public FindOrthoFloor(PointHandler pointHandler, Camera camera) {
-			this.pointHandler = pointHandler;
-			this.camera = camera;
-			System.out.println("Findsurface constructed. : " + pointHandler + camera);
-		}
+		float[] avg = new float[]{0.0f, 0.0f, 0.0f};
 		
-		@Override
-		protected ResponseForm.PlaneParam doInBackground(Object[] objects) {
-			System.out.println("doinbackgrounds~~");
+		int size = 0;
+		for (int ID : map.keySet()) {
+			if (map.get(ID) == null) continue;
 			
-			// Ready Point Cloud
-			FloatBuffer points = pointHandler.getOrThoedBuffer().duplicate();
-			// Ready Request Form
-			RequestForm rf = new RequestForm();
-			
-			rf.setPointBufferDescription(points.capacity() / 4, 16, 0); //pointcount, pointstride, pointoffset
-			rf.setPointDataDescription(0.05f, 0.01f); //accuracy, meanDistance
-			rf.setTargetROI(pointHandler.getBoxID(), 0.05f);//seedIndex,touchRadius
-			rf.setAlgorithmParameter(RequestForm.SearchLevel.NORMAL, RequestForm.SearchLevel.NORMAL);//LatExt, RadExp
-			Log.d("PointsBuffer", points.toString());
-			FindSurfaceRequester fsr = new FindSurfaceRequester(REQUEST_URL, true);
-			// Request Find Surface
-			try {
-				Log.d("PlaneFinder", "request");
-				ResponseForm resp = fsr.request(rf, points);
-				if (resp != null && resp.isSuccess()) {
-					ResponseForm.PlaneParam param = resp.getParamAsPlane();
-					Log.d("PlaneFinder", "request success");
-					return param;
-				} else {
-					Log.d("PlaneFinder", "request fail");
-				}
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-			
-			return null;
+			avg[0] += Objects.requireNonNull(map.get(ID))[0];
+			avg[1] += Objects.requireNonNull(map.get(ID))[1];
+			avg[2] += Objects.requireNonNull(map.get(ID))[2];
+			size++;
 		}
 		
-		@Override
-		protected void onPreExecute() {
-			super.onPreExecute();
-		}
+		avg[0] /= size;
+		avg[1] /= size;
+		avg[2] /= size;
 		
-		@Override
-		protected void onPostExecute(ResponseForm.PlaneParam o) {
-			super.onPostExecute(o);
-			System.out.println("onpostexecute ~~");
-			if (o == null) {
-				Log.d(this.getClass().getName(), "onPostExecute: 평면 추출 실패!!");
-				pointHandler.orthoProjectingStart();
-				return;
-			}
-			try {
-				Plane plane = new Plane(o.ll, o.lr, o.ur, o.ul, camera.getPose().getZAxis());
-				pointHandler.setPlane2(plane);
-				pointHandler.findOrthoFloorEnd();
-			} catch (Exception e) {
-				Log.d("Plane", e.getMessage());
-			}
-		}
+		return avg;
 	}
 	
+	static public float avgDistOfPointMap(Map<Integer, float[]> map, float[] avg) {
+		if (map == null || avg == null) return Float.MIN_VALUE;
+		
+		float avgDistance = 0.0f;
+		int size = 0;
+		for (int ID : map.keySet()) {
+			if (map.get(ID) == null) break;
+			
+			float length = Math.lengthBetween(avg, Objects.requireNonNull(map.get(ID)));
+			avgDistance += length;
+			size++;
+		}
+		
+		avgDistance /= size;
+		
+		return avgDistance;
+	}
 	
+	static public float stdDeviationOfPointMap(Map<Integer, float[]> map, float[] avg, float avgDistance) {
+		if (map == null || avg == null) return Float.MIN_VALUE;
+		
+		double cubeAvg = 0.0f;
+		int size = 0;
+		for (int ID : map.keySet()) {
+			if (map.get(ID) == null) break;
+			
+			float length = Math.lengthBetween(avg, Objects.requireNonNull(map.get(ID)));
+			cubeAvg += java.lang.Math.pow(length, 2);
+			size++;
+		}
+		
+		cubeAvg /= size;
+		double standardDeviation = java.lang.Math.sqrt(cubeAvg - java.lang.Math.pow(avgDistance, 2));
+		
+		return (float) standardDeviation;
+	}
+	
+	static public boolean isInReliability99(float[] avg, float[] a, float avgDistance, float stdDeviation) {
+		return ((avgDistance - (2.58 * stdDeviation)) <= Math.lengthBetween(avg, a))
+		       &&
+		       (Math.lengthBetween(avg, a) <= (avgDistance + (2.58 * stdDeviation)));
+	}
+	
+	static public float[] farthestPointFromAvg(Map<Integer, float[]> map, float[] avg) {
+		if (map == null || avg == null) return null;
+		
+		float[] max = new float[]{0.0f, 0.0f, 0.0f};
+		double curMaxLen = 0.0f;
+		
+		for (int ID : map.keySet()) {
+			if (map.get(ID) == null) continue;
+			
+			double len = Math.lengthBetween(avg, Objects.requireNonNull(map.get(ID)));
+			
+			if (curMaxLen < len) {
+				curMaxLen = len;
+				max[0] = Objects.requireNonNull(map.get(ID))[0];
+				max[1] = Objects.requireNonNull(map.get(ID))[1];
+				max[2] = Objects.requireNonNull(map.get(ID))[2];
+			}
+		}
+		
+		return max;
+	}
+	
+	static public Plane findLeastPlane(Map<Integer, float[]> map, float[] avg, Plane plane) {
+		
+		if (map == null || avg == null) return null;
+		
+		float[] farthestPoint = CoreSystem.farthestPointFromAvg(map, avg);
+		float[] ur = new float[]{
+				farthestPoint[0], farthestPoint[1], farthestPoint[2]
+		};
+		float[] ll = new float[]{
+				(2 * avg[0]) - ur[0],
+				(2 * avg[1]) - ur[1],
+				(2 * avg[2]) - ur[2]
+		};
+		
+		float[] lineVector = new float[]{
+				ll[0] - ur[0],
+				ll[1] - ur[1],
+				ll[2] - ur[2]
+		};
+		
+		float[] ul = null, lr = null;
+		float[] certainPoint = null;
+		
+		float curMaxLen = 0;
+		
+		for (int ID : map.keySet()) {
+			if (map.get(ID) == null) continue;
+			
+			float[] pointPointVector = new float[]{
+					Objects.requireNonNull(map.get(ID))[0] - ur[0],
+					Objects.requireNonNull(map.get(ID))[1] - ur[1],
+					Objects.requireNonNull(map.get(ID))[2] - ur[2]
+			};
+			
+			float tmp =
+					Math.vectorSize(Math.outer(lineVector, pointPointVector))
+					/ Math.vectorSize(lineVector);
+			
+			if (curMaxLen < tmp) {
+				curMaxLen = tmp;
+				if (certainPoint == null) certainPoint = new float[3];
+				certainPoint[0] = Objects.requireNonNull(map.get(ID))[0];
+				certainPoint[1] = Objects.requireNonNull(map.get(ID))[1];
+				certainPoint[2] = Objects.requireNonNull(map.get(ID))[2];
+			}
+		}
+		
+		if (certainPoint == null) return null;
+		
+		float radius = Math.vectorSize(Math.sub(ur, avg));
+		
+		float[] tmp = new float[]{
+				certainPoint[0] - avg[0],
+				certainPoint[1] - avg[1],
+				certainPoint[2] - avg[2],
+		};
+		
+		certainPoint[0] = avg[0] + (tmp[0] * radius / Math.vectorSize(tmp));
+		certainPoint[1] = avg[1] + (tmp[1] * radius / Math.vectorSize(tmp));
+		certainPoint[2] = avg[2] + (tmp[2] * radius / Math.vectorSize(tmp));
+		
+		float[] oppositeOfCertainPoint = {
+				(2 * avg[0]) - certainPoint[0],
+				(2 * avg[1]) - certainPoint[1],
+				(2 * avg[2]) - certainPoint[2]
+		};
+		
+		if (plane.isInputUL(ll, ur, certainPoint)) {
+			ul = certainPoint;
+			lr = oppositeOfCertainPoint;
+		} else {
+			ul = oppositeOfCertainPoint;
+			lr = certainPoint;
+		}
+		
+		return new Plane(ll, lr, ur, ul);
+	}
 }
 

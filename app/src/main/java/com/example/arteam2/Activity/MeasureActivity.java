@@ -40,7 +40,6 @@ import javax.microedition.khronos.opengles.GL10;
 public class MeasureActivity extends AppCompatActivity implements GLSurfaceView.Renderer {
 	ScreenStatus screenStatus = new ScreenStatus();
 	CoreSystem.FindFloor findFloor = null;
-	CoreSystem.FindOrthoFloor findOrthoFloor = null;
 	
 	private BackgroundRenderer backgroundRenderer = new BackgroundRenderer();
 	

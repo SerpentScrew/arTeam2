@@ -9,10 +9,20 @@ public class Renderer {
 		shader.unBind();
 	}
 	
+	static public void thick(Shader shader) {
+		shader.bind();
+		GLES20.glLineWidth(8);
+		shader.unBind();
+	}
+	
 	static public void blendDraw(Shader shader, int glModeEnum, int first, int count) {
 		shader.bind();
 		GLES20.glEnable(GLES20.GL_BLEND);
 		GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
+//		// Enable depth test
+//		GLES20.glEnable(GLES20.GL_DEPTH_TEST);
+//// Accept fragment if it closer to the camera than the former one
+//		GLES20.glDepthFunc(GLES20.GL_LESS);
 		GLES20.glDrawArrays(glModeEnum, first, count);
 		shader.unBind();
 	}

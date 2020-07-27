@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.Objects;
 
 public class PointHandler {
-	public final int REQUIRED_POINTS = 5000;
+	public final int REQUIRED_POINTS = 3000;
 	public final float FINE_CONFIDENCE = 0.3f;
 	
 	private Map<Integer, ArrayList<float[]>> allPoints = null;
@@ -35,10 +35,9 @@ public class PointHandler {
 	private FloatBuffer filteredBuffer = null;
 	private FloatBuffer targetedBuffer = null;
 	private FloatBuffer orThoedBuffer = null;
-	private FloatBuffer targetedOrthoBuffer = null;
-	
 	
 	private MainRenderer renderer;
+	private MainRenderer subRenderer;
 	
 	private Bust mode = Bust.StanBy;
 	
@@ -70,14 +69,16 @@ public class PointHandler {
 	private int collectDoneMsg = R.string.press_ground;
 	// TODO : 이거 그냥 디버그용. 지우기
 	private Plane plane = null;
-	private Plane plane2 = null;
+	private Plane planeObject = null;
 	
 	private int collectOrthoDoneMsg = R.string.press_ground;
 	
 	public void whenGLCreate(Context context) {
 		filteredPoints = new HashMap<>();
 		renderer = new MainRenderer();
+		subRenderer = new MainRenderer();
 		renderer.whenGLCreate(context);
+		subRenderer.whenGLCreate(context);
 	}
 	
 	@RequiresApi(api = Build.VERSION_CODES.O)
@@ -118,15 +119,11 @@ public class PointHandler {
 							plane.getul()[0], plane.getul()[1], plane.getul()[2], 1.0f
 					};
 				}
-				renderer.planeDraw(
-						GLSupport.makeFloatBuffer(pointForDrawingPlane), modelViewProjection, Color.valueOf(Color.YELLOW)
-				                  );
+				renderer.planeDraw(GLSupport.makeFloatBuffer(pointForDrawingPlane), modelViewProjection, Color.valueOf(Color.YELLOW));
 				break;
 			
 			case DeletingFloor:
-				renderer.planeDraw(
-						GLSupport.makeFloatBuffer(pointForDrawingPlane), modelViewProjection, Color.valueOf(Color.YELLOW)
-				                  );
+				renderer.planeDraw(GLSupport.makeFloatBuffer(pointForDrawingPlane), modelViewProjection, Color.valueOf(Color.YELLOW));
 				if (!isDeleted) break;
 				if (deletedPoints.size() <= 0) break;
 				renderer.pointDraw(
@@ -146,30 +143,25 @@ public class PointHandler {
 				break;
 			
 			case FindingOrthoFloor:
-//				if (targetedOrthoBuffer == null || !targetedOrthoBuffer.hasRemaining()) break;
-//				renderer.pointDraw(targetedOrthoBuffer, modelViewProjection, Color.valueOf(Color.GREEN), 20.0f);
 				if (pointForDrawingPlane2 == null) break;
-				renderer.planeDraw(
-						GLSupport.makeFloatBuffer(pointForDrawingPlane2), modelViewProjection, Color.valueOf(Color.YELLOW)
-				                  );
+				renderer.planeDraw(GLSupport.makeFloatBuffer(pointForDrawingPlane2), modelViewProjection, Color.valueOf(Color.YELLOW));
 				break;
 			
 			case FoundOrthoFloor:
 				if (!isCubeMade) break;
 				if (pointForDrawingCube == null) break;
-				renderer.planeDraw(
-						GLSupport.makeFloatBuffer(pointForDrawingCube), modelViewProjection, Color.valueOf(Color.BLUE)
-				                  );
+				subRenderer.lineDraw(GLSupport.makeFloatBuffer(pointForDrawingCube), modelViewProjection);
+				renderer.planeDraw(GLSupport.makeFloatBuffer(pointForDrawingCube), modelViewProjection, Color.valueOf(Color.BLUE));
 				break;
 			
 		}
 	}
 	
 	public void makeFunCube() {
-		float[] lul = ul;
-		float[] lur = ur;
-		float[] lll = ll;
-		float[] llr = lr;
+		float[] lul = planeObject.getul();
+		float[] lur = planeObject.getur();
+		float[] lll = planeObject.getll();
+		float[] llr = planeObject.getlr();
 		
 		float[] uul = new float[]{
 				lul[0] + java.lang.Math.abs(groundNorm[0] * boxHeight),
@@ -222,16 +214,10 @@ public class PointHandler {
 	public void orThoObject() {
 		HashMap<Integer, float[]> tempMap = new HashMap<>();
 		
-		float a = groundNorm[0];
-		float b = groundNorm[1];
-		float c = groundNorm[2];
+		float a = groundNorm[0], b = groundNorm[1], c = groundNorm[2];
 		float d = groundDVal;
 		
-		int maxID = -1;
-		
 		for (int ID : objectPoints.keySet()) {
-			if (ID > maxID) maxID = ID;
-			
 			float[] p = objectPoints.get(ID);
 			if (p == null) continue;
 			
@@ -258,153 +244,34 @@ public class PointHandler {
 			return;
 		}
 		
-		float[] point = new float[]{
-				Objects.requireNonNull(tempMap.get(boxID))[0],
-				Objects.requireNonNull(tempMap.get(boxID))[1],
-				Objects.requireNonNull(tempMap.get(boxID))[2],
-				1.0f
-		};
-		
-		targetedOrthoBuffer = GLSupport.makeFloatBuffer(Objects.requireNonNull(point));
-		
-		
 		// TODO : 일단 자꾸 request fail 해서 정규분포라 가정하고 신뢰구간 이용해서 땅 찾음
-		float[] avg = new float[]{0.0f, 0.0f, 0.0f};
-		int size = 0;
-		for (int ID : tempMap.keySet()) {
-			avg[0] += tempMap.get(ID)[0];
-			avg[1] += tempMap.get(ID)[1];
-			avg[2] += tempMap.get(ID)[2];
-			size++;
-		}
-		avg[0] /= size;
-		avg[1] /= size;
-		avg[2] /= size;
-		
-		float avgDistance = 0.0f;
-		double cubeAvg = 0.0f;
-		size = 0;
-		for (int ID : tempMap.keySet()) {
-			float length = Math.lengthBetween(avg, tempMap.get(ID));
-			avgDistance += length;
-			cubeAvg += java.lang.Math.pow(length, 2);
-			size++;
-		}
-		avgDistance /= size;
-		cubeAvg /= size;
-		double standardDeviation = java.lang.Math.sqrt(cubeAvg - java.lang.Math.pow(avgDistance, 2));
-		
-		System.out.println("avg : " + avgDistance + ", 표준편차 : " + standardDeviation + ", size : " + size);
+		float[] avg = CoreSystem.avgOfPointMap(tempMap);
+		float avgDistance = CoreSystem.avgDistOfPointMap(tempMap, avg);
+		float standardDeviation = CoreSystem.stdDeviationOfPointMap(tempMap, avg, avgDistance);
 		
 		HashMap<Integer, float[]> projectedPoints = new HashMap<>();
 		for (int ID : tempMap.keySet()) {
-			if (avgDistance - (2.58 * standardDeviation) <= Math.lengthBetween(avg, tempMap.get(ID))
-			    && Math.lengthBetween(avg, tempMap.get(ID)) <= avgDistance + (2.58 * standardDeviation)) {
+			if (CoreSystem.isInReliability99(avg, tempMap.get(ID), avgDistance, standardDeviation)) {
 				projectedPoints.put(ID, tempMap.get(ID));
 			}
 		}
-		
 		
 		if (projectedPoints.isEmpty()) {
 			Log.d(this.getClass().getName(), "orThoObject: something wrong with projectedPoints");
 		}
 		
-		System.out.println("///////////// size : " + projectedPoints.size());
-		
 		orThoedBuffer = GLSupport.makeFloatBuffer(projectedPoints);
 		
-		///////////////////
-		avg[0] = 0;
-		avg[1] = 0;
-		avg[2] = 0;
-		size = 0;
-		for (int ID : projectedPoints.keySet()) {
-			avg[0] += projectedPoints.get(ID)[0];
-			avg[1] += projectedPoints.get(ID)[1];
-			avg[2] += projectedPoints.get(ID)[2];
-			size++;
-		}
-		avg[0] /= size;
-		avg[1] /= size;
-		avg[2] /= size;
-		
-		float[] max = new float[]{0.0f, 0.0f, 0.0f};
-		double curMaxLen = 0.0f;
-		for (int ID : projectedPoints.keySet()) {
-			double len = Math.lengthBetween(avg, projectedPoints.get(ID));
-			if (curMaxLen < len) {
-				curMaxLen = len;
-				max[0] = projectedPoints.get(ID)[0];
-				max[1] = projectedPoints.get(ID)[1];
-				max[2] = projectedPoints.get(ID)[2];
-			}
-		}
-		
-		ur = new float[]{
-				max[0], max[1], max[2]
-		};
-		ll = new float[]{
-				(2 * avg[0]) - ur[0],
-				(2 * avg[1]) - ur[1],
-				(2 * avg[2]) - ur[2]
-		};
-		
-		float[] lineVector = new float[]{
-				ll[0] - ur[0],
-				ll[1] - ur[1],
-				ll[2] - ur[2]
-		};
-		
-		ul = null;
-		lr = null;
-		
-		float[] iteratingPoint = new float[]{0.0f, 0.0f, 0.0f};
-		
-		curMaxLen = 0;
-		for (int ID : projectedPoints.keySet()) {
-			float[] pointPointVector = new float[]{
-					projectedPoints.get(ID)[0] - ur[0],
-					projectedPoints.get(ID)[1] - ur[1],
-					projectedPoints.get(ID)[2] - ur[2]
-			};
-			
-			double tmp =
-					Math.vectorSize(Math.outer(lineVector, pointPointVector))
-					/ Math.vectorSize(lineVector);
-			
-			if (curMaxLen < tmp) {
-				curMaxLen = tmp;
-				iteratingPoint[0] = projectedPoints.get(ID)[0];
-				iteratingPoint[1] = projectedPoints.get(ID)[1];
-				iteratingPoint[2] = projectedPoints.get(ID)[2];
-			}
-		}
-		
-		float[] oppositeIteratingPoint = {
-				(2 * avg[0]) - iteratingPoint[0],
-				(2 * avg[1]) - iteratingPoint[1],
-				(2 * avg[2]) - iteratingPoint[2]
-		};
-		
-		if (Math.inner(
-				plane.getNormal(),
-				Math.outer(Math.sub(ll, ur), Math.sub(ll, iteratingPoint))
-		              ) >= 0) {
-			ul = iteratingPoint;
-			lr = oppositeIteratingPoint;
-		} else {
-			ul = oppositeIteratingPoint;
-			lr = iteratingPoint;
-		}
+		planeObject = CoreSystem.findLeastPlane(projectedPoints, avg, plane);
 		
 		if (pointForDrawingPlane2 == null) {
 			pointForDrawingPlane2 = new float[]{
-					ll[0], ll[1], ll[2], 1.0f,
-					lr[0], lr[1], lr[2], 1.0f,
-					ur[0], ur[1], ur[2], 1.0f,
-					ll[0], ll[1], ll[2], 1.0f,
-					ur[0], ur[1], ur[2], 1.0f,
-					ul[0], ul[1], ul[2], 1.0f
+					planeObject.getll()[0], planeObject.getll()[1], planeObject.getll()[2], 1.0f,
+					planeObject.getlr()[0], planeObject.getlr()[1], planeObject.getlr()[2], 1.0f,
+					planeObject.getur()[0], planeObject.getur()[1], planeObject.getur()[2], 1.0f,
+					planeObject.getll()[0], planeObject.getll()[1], planeObject.getll()[2], 1.0f,
+					planeObject.getur()[0], planeObject.getur()[1], planeObject.getur()[2], 1.0f,
+					planeObject.getul()[0], planeObject.getul()[1], planeObject.getul()[2], 1.0f
 			};
 		}
 		isGenerated = true;
@@ -438,7 +305,6 @@ public class PointHandler {
 		
 		isDeleted = true;
 	}
-	
 	
 	public void pickToEraseFloor(float xPx, float yPx, int width, int height, Camera camera) {
 		boolean isSucceedPickPoint = false;
@@ -630,10 +496,6 @@ public class PointHandler {
 	
 	public void setCollectDoneMsg(int collectDoneMsg) {
 		this.collectDoneMsg = collectDoneMsg;
-	}
-	
-	public void setPlane2(Plane plane) {
-		this.plane2 = plane;
 	}
 	
 	public int getCollectedPointsNum() {
