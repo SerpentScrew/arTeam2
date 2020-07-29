@@ -14,6 +14,7 @@ import com.example.arteam2.R;
 import com.example.arteam2.Renderer.MainRenderer;
 import com.google.ar.core.Camera;
 import com.google.ar.core.PointCloud;
+import com.google.ar.core.Pose;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
@@ -24,8 +25,9 @@ import java.util.Map;
 import java.util.Objects;
 
 public class PointHandler {
-	public final int REQUIRED_POINTS = 3000;
+	public final int REQUIRED_POINTS = 2000;
 	public final float FINE_CONFIDENCE = 0.3f;
+	final float EPSILON = 0.15f;
 	
 	private Map<Integer, ArrayList<float[]>> allPoints = null;
 	private Map<Integer, float[]> filteredPoints;
@@ -46,18 +48,11 @@ public class PointHandler {
 	private float[] pointForDrawingPlane2 = null;
 	private float[] pointForDrawingCube = null;
 	
-	private float[] ur = null;
-	private float[] ll = null;
-	private float[] ul = null;
-	private float[] lr = null;
-	
 	private float boxHeight = -1;
 	private int boxID = -1;
 	
-	// 평면의 법선벡터
-	private float[] groundNorm = null;
-	// ax + by + cz + d = 0 의 d 값
-	private float groundDVal = -1;
+	float width;
+	float height;
 	
 	private float z_dis = Float.MIN_VALUE;
 	
@@ -67,7 +62,7 @@ public class PointHandler {
 	private boolean isCubeMade = false;
 	
 	private int collectDoneMsg = R.string.press_ground;
-	// TODO : 이거 그냥 디버그용. 지우기
+	
 	private Plane plane = null;
 	private Plane planeObject = null;
 	
@@ -82,7 +77,7 @@ public class PointHandler {
 	}
 	
 	@RequiresApi(api = Build.VERSION_CODES.O)
-	public void draw(PointCloud pointCloud, float[] cameraView, float[] cameraPerspective) {
+	public void draw(PointCloud pointCloud, Pose pose, float[] cameraView, float[] cameraPerspective) {
 		if (mode == Bust.StanBy) return;
 		
 		float[] modelViewProjection = new float[16];
@@ -92,14 +87,15 @@ public class PointHandler {
 		// TODO : 간지나게 바꿀 필요 있음
 		switch (mode) {
 			case Collecting:
-				push(pointCloud.getIds(), pointCloud.getPoints());
-				renderer.pointDraw(pointCloud.getPoints(), modelViewProjection, Color.valueOf(Color.RED));
+				push(pose, modelViewProjection, pointCloud.getIds(), pointCloud.getPoints());
+//				renderer.pointDraw(checkIt(pose, pointCloud.getPoints(), modelViewProjection), modelViewProjection, Color.valueOf(Color.RED), 10.0f);
+				renderer.pointDraw(pointCloud.getPoints(), modelViewProjection, Color.valueOf(Color.RED), 10.0f);
 				break;
 			
 			case CollectDone:
 				if (!isFiltered()) filterPoints();
 				if (filteredBuffer == null || !filteredBuffer.hasRemaining()) break;
-				renderer.pointDraw(filteredBuffer, modelViewProjection, Color.valueOf(Color.CYAN));
+				renderer.pointDraw(filteredBuffer, modelViewProjection, Color.valueOf(Color.CYAN), 10.0f);
 				break;
 			
 			case FindingFloor:
@@ -126,15 +122,11 @@ public class PointHandler {
 				renderer.planeDraw(GLSupport.makeFloatBuffer(pointForDrawingPlane), modelViewProjection, Color.valueOf(Color.YELLOW));
 				if (!isDeleted) break;
 				if (deletedPoints.size() <= 0) break;
-				renderer.pointDraw(
-						GLSupport.makeFloatBuffer(deletedPoints), modelViewProjection, Color.valueOf(Color.BLACK)
-				                  );
+				renderer.pointDraw(GLSupport.makeFloatBuffer(deletedPoints), modelViewProjection, Color.valueOf(Color.BLACK), 10.0f);
 				break;
 			case FloorDeleted:
 				if (objectPoints.size() <= 0) break;
-				renderer.pointDraw(
-						GLSupport.makeFloatBuffer(objectPoints), modelViewProjection, Color.valueOf(Color.BLUE)
-				                  );
+				renderer.pointDraw(GLSupport.makeFloatBuffer(objectPoints), modelViewProjection, Color.valueOf(Color.BLUE), 10.0f);
 				break;
 			case OrthoProject:
 				if (!isGenerated()) break;
@@ -150,8 +142,30 @@ public class PointHandler {
 			case FoundOrthoFloor:
 				if (!isCubeMade) break;
 				if (pointForDrawingCube == null) break;
-				subRenderer.lineDraw(GLSupport.makeFloatBuffer(pointForDrawingCube), modelViewProjection);
-				renderer.planeDraw(GLSupport.makeFloatBuffer(pointForDrawingCube), modelViewProjection, Color.valueOf(Color.BLUE));
+				renderer.cubeDraw(GLSupport.makeFloatBuffer(pointForDrawingCube), modelViewProjection);
+				break;
+			
+			case DebugMode:
+				if (targetedBuffer == null || !targetedBuffer.hasRemaining()) break;
+//				float[] projMTX = new float[16];
+//				camera.getProjectionMatrix(projMTX, 0, 0.1f, 100f);
+//				float[] viewMTX = new float[16];
+//				camera.getViewMatrix(viewMTX, 0);
+//				float[] viewProj = new float[16];
+//				Matrix.multiplyMM(viewProj, 0, projMTX, 0, viewMTX, 0);
+				float[] modelViewProj = new float[4];
+				float[] point = new float[]{targetedBuffer.get(0), targetedBuffer.get(1), targetedBuffer.get(2), 1.0f};
+				Matrix.multiplyMV(modelViewProj, 0, modelViewProjection, 0, point, 0);
+//				renderer.pointDraw(GLSupport.makeFloatBuffer(point), modelViewProjection, Color.valueOf(Color.CYAN), 20.0f);
+				renderer.debugDraw(GLSupport.makeFloatBuffer(modelViewProj), modelViewProjection, Color.valueOf(Color.GREEN), 20.0f);
+//				modelViewProj[0] = (modelViewProj[0] + 1) / 2.0f * width;
+//				modelViewProj[1] = (modelViewProj[1] + 1) / 2.0f + height;
+				System.out.println("/////////////// cvt projection 어쩌구 : " +
+				                   "(" +
+				                   modelViewProj[0] / modelViewProj[3] + ", " +
+				                   modelViewProj[1] / modelViewProj[3] + ", " +
+				                   modelViewProj[2] / modelViewProj[3] + ")");
+				
 				break;
 			
 		}
@@ -164,27 +178,27 @@ public class PointHandler {
 		float[] llr = planeObject.getlr();
 		
 		float[] uul = new float[]{
-				lul[0] + java.lang.Math.abs(groundNorm[0] * boxHeight),
-				lul[1] + java.lang.Math.abs(groundNorm[1] * boxHeight),
-				lul[2] + java.lang.Math.abs(groundNorm[2] * boxHeight)
+				lul[0] + java.lang.Math.abs(plane.getNormal()[0] * boxHeight),
+				lul[1] + java.lang.Math.abs(plane.getNormal()[1] * boxHeight),
+				lul[2] + java.lang.Math.abs(plane.getNormal()[2] * boxHeight)
 		};
 		
 		float[] uur = new float[]{
-				lur[0] + java.lang.Math.abs(groundNorm[0] * boxHeight),
-				lur[1] + java.lang.Math.abs(groundNorm[1] * boxHeight),
-				lur[2] + java.lang.Math.abs(groundNorm[2] * boxHeight)
+				lur[0] + java.lang.Math.abs(plane.getNormal()[0] * boxHeight),
+				lur[1] + java.lang.Math.abs(plane.getNormal()[1] * boxHeight),
+				lur[2] + java.lang.Math.abs(plane.getNormal()[2] * boxHeight)
 		};
 		
 		float[] ull = new float[]{
-				lll[0] + java.lang.Math.abs(groundNorm[0] * boxHeight),
-				lll[1] + java.lang.Math.abs(groundNorm[1] * boxHeight),
-				lll[2] + java.lang.Math.abs(groundNorm[2] * boxHeight)
+				lll[0] + java.lang.Math.abs(plane.getNormal()[0] * boxHeight),
+				lll[1] + java.lang.Math.abs(plane.getNormal()[1] * boxHeight),
+				lll[2] + java.lang.Math.abs(plane.getNormal()[2] * boxHeight)
 		};
 		
 		float[] ulr = new float[]{
-				llr[0] + java.lang.Math.abs(groundNorm[0] * boxHeight),
-				llr[1] + java.lang.Math.abs(groundNorm[1] * boxHeight),
-				llr[2] + java.lang.Math.abs(groundNorm[2] * boxHeight)
+				llr[0] + java.lang.Math.abs(plane.getNormal()[0] * boxHeight),
+				llr[1] + java.lang.Math.abs(plane.getNormal()[1] * boxHeight),
+				llr[2] + java.lang.Math.abs(plane.getNormal()[2] * boxHeight)
 		};
 		
 		float[][] boxPoints = new float[][]{
@@ -214,8 +228,8 @@ public class PointHandler {
 	public void orThoObject() {
 		HashMap<Integer, float[]> tempMap = new HashMap<>();
 		
-		float a = groundNorm[0], b = groundNorm[1], c = groundNorm[2];
-		float d = groundDVal;
+		float a = plane.getNormal()[0], b = plane.getNormal()[1], c = plane.getNormal()[2];
+		float d = plane.getDVal();
 		
 		for (int ID : objectPoints.keySet()) {
 			float[] p = objectPoints.get(ID);
@@ -245,6 +259,7 @@ public class PointHandler {
 		}
 		
 		// TODO : 일단 자꾸 request fail 해서 정규분포라 가정하고 신뢰구간 이용해서 땅 찾음
+		// TODO : 그 평면의 점들이 울퉁불퉁한거 없으면 Request 안된다 함
 		float[] avg = CoreSystem.avgOfPointMap(tempMap);
 		float avgDistance = CoreSystem.avgDistOfPointMap(tempMap, avg);
 		float standardDeviation = CoreSystem.stdDeviationOfPointMap(tempMap, avg, avgDistance);
@@ -276,14 +291,38 @@ public class PointHandler {
 		}
 		isGenerated = true;
 	}
+//
+//	public void deleteFloor() {
+//		if (objectPoints == null) objectPoints = new HashMap<>();
+//		if (deletedPoints == null) deletedPoints = new HashMap<>();
+//
+//		float a = plane.getNormal()[0], b = plane.getNormal()[1], c = plane.getNormal()[2];
+//		float d = plane.getDVal();
+//
+//		for (int id : filteredPoints.keySet()) {
+//			float[] point = filteredPoints.get(id);
+//			if (point == null) continue;
+//			double distance =
+//					((a * point[0]) + (b * point[1]) + (c * point[2]) + d)
+//					/ java.lang.Math.sqrt((a * a) + (b * b) + (c * c));
+//
+//			if (java.lang.Math.sqrt(distance) > EPSILON) {
+//				objectPoints.put(id, point);
+//				continue;
+//			}
+//			deletedPoints.put(id, point);
+//		}
+//
+//		isDeleted = true;
+//	}
 	
 	public void deleteFloor() {
 		float[] vec1 = Math.sub(plane.getlr(), plane.getll());
 		float[] vec2 = Math.sub(plane.getul(), plane.getll());
 		
-		groundNorm = Math.outer(vec1, vec2);
+		float[] groundNorm = Math.outer(vec1, vec2);
 		Math.normalize(groundNorm);
-		groundDVal =
+		float groundDVal =
 				-(groundNorm[0] * plane.getul()[0]
 				  + groundNorm[1] * plane.getul()[1]
 				  + groundNorm[2] * plane.getul()[2]);
@@ -306,7 +345,14 @@ public class PointHandler {
 		isDeleted = true;
 	}
 	
+	public void eraseFloor() {
+	
+	}
+	
 	public void pickToEraseFloor(float xPx, float yPx, int width, int height, Camera camera) {
+		this.width = width;
+		this.height = height;
+		
 		boolean isSucceedPickPoint = false;
 		float[] ray = CoreSystem.screenPointToWorldRay(xPx, yPx, width, height, camera);
 		
@@ -333,7 +379,11 @@ public class PointHandler {
 				targetedBuffer = GLSupport.makeFloatBuffer(seedPoint);
 			}
 		}
+		
+		
 		if (!isSucceedPickPoint) {
+			
+			
 			setCollectDoneMsg(R.string.press_ground_noFeaturePoint);
 			collectingEnd();
 			return;
@@ -342,12 +392,49 @@ public class PointHandler {
 		Log.d("pickSeed", String.format("%.2f %.2f %.2f : %d", seedPoint[0], seedPoint[1], seedPoint[2], seedPointID));
 	}
 	
-	public void push(IntBuffer ID, FloatBuffer pointCloud) {
+	public FloatBuffer checkIt(Pose pose, FloatBuffer pointBuffer, float[] mvp) {
+		ArrayList<float[]> ret = new ArrayList<>();
+		for (int i = 0; i < pointBuffer.capacity() / 4; i++) {
+			float[] temp = {pointBuffer.get(i * 4), pointBuffer.get(i * 4 + 1), pointBuffer.get(i * 4 + 2), pointBuffer.get(i * 4 + 3)};
+			
+			temp[3] = 1.0f;
+			
+			if (Math.lengthBetween(temp, new float[]{pose.tx(), pose.ty(), pose.tz()}) >= 1.5f)
+				continue;
+			
+			float[] ndc = new float[4];
+			Matrix.multiplyMV(ndc, 0, mvp, 0, temp, 0);
+			ndc[0] /= ndc[3];
+			ndc[1] /= ndc[3];
+			if ((ndc[0] <= -0.8f || 0.8f <= ndc[0]) || (ndc[1] <= -0.8f || 0.8f <= ndc[1])) {
+				continue;
+			}
+			
+			ret.add(temp);
+		}
+		return GLSupport.makeFloatBuffer(ret);
+	}
+	
+	public void push(Pose pose, float[] mvp, IntBuffer ID, FloatBuffer pointBuffer) {
 		if (allPoints == null) allPoints = new HashMap<>();
-		for (int i = 0; i < pointCloud.capacity() / 4; i++) {
-			float[] temp = {pointCloud.get(i * 4), pointCloud.get(i * 4 + 1), pointCloud.get(i * 4 + 2), pointCloud.get(i * 4 + 3)};
+		for (int i = 0; i < pointBuffer.capacity() / 4; i++) {
+			float[] temp = {pointBuffer.get(i * 4), pointBuffer.get(i * 4 + 1), pointBuffer.get(i * 4 + 2), pointBuffer.get(i * 4 + 3)};
+			
 			//if hash map's IDth element doesn't exist, create array list
 			if (temp[3] < FINE_CONFIDENCE) continue;
+			
+			temp[3] = 1.0f;
+			
+			if (Math.lengthBetween(temp, new float[]{pose.tx(), pose.ty(), pose.tz()}) >= 1.5f)
+				continue;
+			
+			float[] ndc = new float[4];
+			Matrix.multiplyMV(ndc, 0, mvp, 0, temp, 0);
+			ndc[0] /= ndc[3];
+			ndc[1] /= ndc[3];
+			if ((ndc[0] <= -0.7f || 0.7f <= ndc[0]) || (ndc[1] <= -0.7f || 0.7f <= ndc[1])) {
+				continue;
+			}
 			
 			int id = ID.get(i);
 			if (!allPoints.containsKey(id)) {
@@ -471,6 +558,10 @@ public class PointHandler {
 		mode = Bust.FoundOrthoFloor;
 	}
 	
+	public void beginDebugMode() {
+		mode = Bust.DebugMode;
+	}
+	
 	/*
 	이하 그냥 getters. 볼 필요 x
 	 */
@@ -539,85 +630,4 @@ public class PointHandler {
 	public int getSeedPointID() {
 		return seedPointID;
 	}
-	
-	//	public void orThoObject() {
-//		HashMap<Integer, float[]> projectedPoints = new HashMap<>();
-//
-//		float a = groundNorm[0];
-//		float b = groundNorm[1];
-//		float c = groundNorm[2];
-//		float d = groundDVal;
-//
-//		int maxID = -1;
-//
-//		for (int ID : objectPoints.keySet()) {
-//			if (ID > maxID) maxID = ID;
-//
-//			float[] p = objectPoints.get(ID);
-//			if (p == null) continue;
-//
-//			double distance =
-//					((a * p[0]) + (b * p[1]) + (c * p[2]) + d)
-//					/ java.lang.Math.sqrt((a * a) + (b * b) + (c * c));
-//
-//			double absDistance = java.lang.Math.abs(distance);
-//
-//			if (distance > boxHeight) {
-//				boxID = ID;
-//				boxHeight = (float) absDistance;
-//			}
-//
-//			p[0] = p[0] - (a * (float) distance);
-//			p[1] = p[1] - (b * (float) distance);
-//			p[2] = p[2] - (c * (float) distance);
-//
-//			projectedPoints.put(ID, p);
-//		}
-//
-//		if (projectedPoints.isEmpty()) {
-//			Log.d(this.getClass().getName(), "orThoObject: (Box Id : " + boxID + ", BoxHeight : " + boxHeight + ")");
-//			return;
-//		}
-//
-//		Log.d(this.getClass().getName(), "orThoObject: (Box Id : " + boxID + ", BoxHeight : " + boxHeight + ")");
-//
-//		float[] point = new float[]{
-//				Objects.requireNonNull(projectedPoints.get(boxID))[0],
-//				Objects.requireNonNull(projectedPoints.get(boxID))[1],
-//				Objects.requireNonNull(projectedPoints.get(boxID))[2],
-//				1.0f
-//		};
-//		targetedOrthoBuffer = GLSupport.makeFloatBuffer(
-//				Objects.requireNonNull(point)
-//		                                               );
-//
-//		float[] customPoint = new float[3];
-//		System.out.println("///////////// size : " + projectedPoints.size());
-//		HashMap<Integer, float[]> copiedMap = GLSupport.copyMap(projectedPoints);
-//		System.out.println("maxID : " + maxID);
-//		int num = 0, num1 = 0;
-//		for (int IDLeft : copiedMap.keySet()) {
-//			num1++;
-//			for (int IDRight : copiedMap.keySet()) {
-//				if (IDLeft == IDRight) continue;
-//				if (Math.lengthBetween(copiedMap.get(IDLeft), copiedMap.get(IDRight)) < 0.03)
-//					continue;
-//				customPoint[0] = (Objects.requireNonNull(copiedMap.get(IDLeft))[0] / 2)
-//				                 + (Objects.requireNonNull(copiedMap.get(IDRight))[0] / 2);
-//				customPoint[1] = (Objects.requireNonNull(copiedMap.get(IDLeft))[1] / 2)
-//				                 + (Objects.requireNonNull(copiedMap.get(IDRight))[1] / 2);
-//				customPoint[2] = (Objects.requireNonNull(copiedMap.get(IDLeft))[2] / 2)
-//				                 + (Objects.requireNonNull(copiedMap.get(IDRight))[2] / 2);
-////				System.out.println("maxID : " + maxID + " customPoint : (" + customPoint[0] + ", " + customPoint[1] + ", " + customPoint[2] + ")");
-//				projectedPoints.put(++maxID, customPoint);
-//				num++;
-//			}
-//		}
-//		System.out.println("///////////// size : " + projectedPoints.size());
-//		System.out.println("maxID : " + maxID + ", num : " + num + ", num1 : " + num1);
-//		orThoedBuffer = GLSupport.makeFloatBuffer(projectedPoints);
-//		System.out.println("orThoedBuffer remaining : " + orThoedBuffer.remaining());
-//		isGenerated = true;
-//	}
-	
 }

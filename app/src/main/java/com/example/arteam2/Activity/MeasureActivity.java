@@ -111,7 +111,7 @@ public class MeasureActivity extends AppCompatActivity implements GLSurfaceView.
 			camera.getViewMatrix(viewMTX, 0);
 			
 			PointCloud pointCloud = frame.acquirePointCloud();
-			pointHandler.draw(pointCloud, viewMTX, projMTX);
+			pointHandler.draw(pointCloud, camera.getPose(), viewMTX, projMTX);
 			
 		} catch (CameraNotAvailableException e) {
 			e.printStackTrace();
@@ -209,14 +209,15 @@ public class MeasureActivity extends AppCompatActivity implements GLSurfaceView.
 						if (findFloor == null) {
 							findFloor = new CoreSystem.FindFloor(pointHandler, camera);
 						}
-						
+
 						if (findFloor.getStatus() == AsyncTask.Status.FINISHED
 						    || findFloor.getStatus() == AsyncTask.Status.RUNNING) {
 							findFloor.cancel(true);
 							findFloor = new CoreSystem.FindFloor(pointHandler, camera);
 						}
-						
+//
 						findFloor.execute();
+//						pointHandler.beginDebugMode();
 						pointHandler.findFloorStart();
 						break;
 					case FindingFloor:

@@ -46,27 +46,18 @@ public class Plane {
 	
 	protected void calNormal() {
 		// Calculate normal vector
-		float[] vec1 = new float[3];
-		float[] vec2 = new float[3];
+		float[] vec1 = Math.sub(lr, ll);
+		float[] vec2 = Math.sub(ul, ll);
 		
-		vec1[0] = lr[0] - ll[0];
-		vec1[1] = lr[1] - ll[1];
-		vec1[2] = lr[2] - ll[2];
-		
-		vec2[0] = ul[0] - ll[0];
-		vec2[1] = ul[1] - ll[1];
-		vec2[2] = ul[2] - ll[2];
-		
-		this.normal[0] = vec1[1] * vec2[2] - vec1[2] * vec2[1];
-		this.normal[1] = vec1[2] * vec2[0] - vec1[0] * vec2[2];
-		this.normal[2] = vec1[0] * vec2[1] - vec1[1] * vec2[0];
-		
-		float scala = (float) java.lang.Math.sqrt(normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2]);
-		
-		this.normal[0] /= scala;
-		this.normal[1] /= scala;
-		this.normal[2] /= scala;
-		
+		this.normal = Math.outer(vec1, vec2);
+		Math.normalize(this.normal);
+	}
+	
+	public float getDVal() {
+		// D = 0 - Ax - By - Cz
+		return -normal[0] * ll[0]
+		       - normal[1] * ll[1]
+		       - normal[2] * ll[2];
 	}
 	
 	public float[] getll() {
@@ -90,21 +81,20 @@ public class Plane {
 	}
 	
 	
-	public boolean checkNormal(float[] z_dir) {
-		if (z_dir[0] * normal[0] + z_dir[1] * normal[1] + z_dir[2] * normal[2] >= 0) {
-			return true;
-		}
+	public void checkNormal(float[] z_dir) {
+		if (z_dir[0] * normal[0] + z_dir[1] * normal[1] + z_dir[2] * normal[2] >= 0) return;
 		
 		normal[0] = -normal[0];
 		normal[1] = -normal[1];
 		normal[2] = -normal[2];
-		return false;
 	}
 	
 	public boolean isInputUL(float[] ll, float[] ur, float[] tmp) {
-		float[] normInput = Math.outer(Math.sub(ur, ll), Math.sub(tmp, ll));
-		float[] planeNorm = Math.outer(Math.sub(ur, ll), Math.sub(this.ul, ll));
-		return (Math.inner(this.normal, planeNorm) >= 0) && (Math.inner(this.normal, normInput) >= 0);
+		{
+			float[] normInput = Math.outer(Math.sub(ur, ll), Math.sub(tmp, ll));
+			float[] planeNorm = Math.outer(Math.sub(ur, ll), Math.sub(this.ul, ll));
+			return (Math.inner(this.normal, planeNorm) >= 0) && (Math.inner(this.normal, normInput) >= 0);
+		}
 	}
 	
 	@Override
