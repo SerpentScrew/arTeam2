@@ -34,11 +34,12 @@ public class FullScreenUtility {
 	 * hide는 마찬가지로 setContentView 하기 전에 사용하면 됨
 	 * 함수는 아래 따로
 	 */
-	/*public static void hideNavigateBar(AppCompatActivity activity) {
+
+	public static void hideNavigateBar(AppCompatActivity activity) {
 		activity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
 	}
 
-	public void onWindowFocusChanged(boolean hasFocus) {
+	/*public void onWindowFocusChanged(boolean hasFocus) {
 		super.onWindowFocusChanged(hasFocus);
 		if (hasFocus) {
 			getWindow().getDecorView().setSystemUiVisibility(

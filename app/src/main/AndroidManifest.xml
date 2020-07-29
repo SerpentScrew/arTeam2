@@ -34,8 +34,10 @@
         <activity
             android:name=".Activity.MainActivity"
             android:screenOrientation="portrait">
-
         </activity>
+
+        <activity android:name=".Activity.SettingsActivity" android:theme="@android:style/Theme.Dialog" />
+
 
 
         <meta-data
