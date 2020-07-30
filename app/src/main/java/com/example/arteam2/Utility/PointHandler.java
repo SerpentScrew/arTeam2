@@ -27,7 +27,7 @@ import java.util.Objects;
 public class PointHandler {
 	public final int REQUIRED_POINTS = 2000;
 	public final float FINE_CONFIDENCE = 0.3f;
-	public final float epsilon = 0.05f;
+	final float EPSILON = 0.05f;
 	
 	private Map<Integer, ArrayList<float[]>> allPoints = null;
 	private Map<Integer, float[]> filteredPoints;
@@ -273,13 +273,12 @@ public class PointHandler {
 		int maxSize = 0;
 		Map<Integer, float[]> maxArr = null;
 		for (Map<Integer, float[]> tmp : arrOfArr) {
-			if (maxSize == 0) maxArr = tmp;
 			if (maxSize < tmp.size()) {
 				maxSize = tmp.size();
 				maxArr = tmp;
 			}
 		}
-		
+		if (maxArr == null) return;
 		/*
 		// TODO : 일단 자꾸 request fail 해서 정규분포라 가정하고 신뢰구간 이용해서 땅 찾음
 		// TODO : 그 평면의 점들이 울퉁불퉁한거 없으면 Request 안된다 함
@@ -298,12 +297,27 @@ public class PointHandler {
 			Log.d(this.getClass().getName(), "orThoObject: something wrong with projectedPoints");
 		}
 		*/
-
-//		orThoedBuffer = GLSupport.makeFloatBuffer(projectedPoints);
-		orThoedBuffer = GLSupport.makeFloatBuffer(maxArr);
-
-//		planeObject = CoreSystem.findLeastPlane(projectedPoints, avg, plane);
-		planeObject = CoreSystem.findLeastPlane(maxArr, CoreSystem.avgOfPointMap(maxArr), plane);
+		float[] avg = CoreSystem.avgOfPointMap(maxArr);
+		float avgDistance = CoreSystem.avgDistOfPointMap(maxArr, avg);
+		float standardDeviation = CoreSystem.stdDeviationOfPointMap(maxArr, avg, avgDistance);
+		
+		HashMap<Integer, float[]> projectedPoints = new HashMap<>();
+		for (int ID : maxArr.keySet()) {
+			if (CoreSystem.isInReliability99(avg, maxArr.get(ID), avgDistance, standardDeviation)) {
+				projectedPoints.put(ID, maxArr.get(ID));
+			}
+		}
+		
+		if (projectedPoints.isEmpty()) {
+			Log.d(this.getClass().getName(), "orThoObject: something wrong with projectedPoints");
+		}
+		
+		
+		orThoedBuffer = GLSupport.makeFloatBuffer(projectedPoints);
+//		orThoedBuffer = GLSupport.makeFloatBuffer(maxArr);
+		
+		planeObject = CoreSystem.findLeastPlane(projectedPoints, avg, plane);
+//		planeObject = CoreSystem.findLeastPlane(maxArr, CoreSystem.avgOfPointMap(maxArr), plane);
 		
 		if (pointForDrawingPlane2 == null) {
 			pointForDrawingPlane2 = new float[]{
@@ -331,13 +345,12 @@ public class PointHandler {
 		
 		if (objectPoints == null) objectPoints = new HashMap<>();
 		if (deletedPoints == null) deletedPoints = new HashMap<>();
-
 		
 		for (int id : filteredPoints.keySet()) {
 			float[] point = filteredPoints.get(id);
 			if (point == null) continue;
 			float a = Math.inner(groundNorm, point);
-			if (a < -groundDVal - epsilon || a > -groundDVal + epsilon) {
+			if (a < -groundDVal - EPSILON || a > -groundDVal + EPSILON) {
 				objectPoints.put(id, point);
 				continue;
 			}
