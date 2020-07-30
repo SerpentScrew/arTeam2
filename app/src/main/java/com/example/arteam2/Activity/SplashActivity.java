@@ -6,8 +6,6 @@ import android.os.Bundle;
 
 import androidx.annotation.Nullable;
 
-import com.example.arteam2.Activity.MainActivity;
-
 public class SplashActivity extends Activity {
 
     @Override
@@ -15,7 +13,7 @@ public class SplashActivity extends Activity {
         super.onCreate(savedInstanceState);
 
         try{
-            Thread.sleep(1000);
+            Thread.sleep(1600);
         }catch(InterruptedException e){
             e.printStackTrace();
         }
