@@ -21,6 +21,7 @@ import android.os.Build;
 
 import androidx.annotation.RequiresApi;
 
+import com.example.arteam2.GL.Renderer;
 import com.example.arteam2.GL.Shader;
 import com.example.arteam2.GL.VertexBuffer;
 import com.google.ar.core.PointCloud;
@@ -38,26 +39,28 @@ public class MainRenderer {
 	private static final int BYTES_PER_POINT = BYTES_PER_FLOAT * FLOATS_PER_POINT;
 	
 	VertexBuffer vertexBuffer;
-	
+	Context context;
 	Shader shader;
 	
 	public MainRenderer() {
 	}
 	
 	public void whenGLCreate(Context context) {
+		this.context = context;
 		vertexBuffer = new VertexBuffer(GLES20.GL_DYNAMIC_DRAW);
 		shader = new Shader(context, FRAGMENT_SHADER_PATH, VERTEX_SHADER_PATH);
 		shader.makeProgram().bind();
 	}
 	
-	@RequiresApi(api = Build.VERSION_CODES.O)
-	public void pointDraw(FloatBuffer floatBuffer, float[] modelViewProjection, Color color) {
+	public void cubeDraw(FloatBuffer floatBuffer, float[] modelViewProjection) {
 		vertexBuffer.fillData(floatBuffer);
 		shader.setAttrib(vertexBuffer, "a_Position", 4, GLES20.GL_FLOAT, false, BYTES_PER_POINT, 0);
-		shader.setUniform("u_Color", color.red(), color.green(), color.blue(), color.alpha());
 		shader.setUniform("u_ModelViewProjection", 1, false, modelViewProjection, 0);
-		shader.setUniform("u_PointSize", 10.0f);
-		com.example.arteam2.GL.Renderer.draw(shader, GLES20.GL_POINTS, 0, floatBuffer.remaining() / FLOATS_PER_POINT);
+		shader.setUniform("u_PointSize", -1.0f);
+		shader.setUniform("u_Color", Color.WHITE, Color.WHITE, Color.WHITE, 1.0f);
+		Renderer.wireDraw(shader, 0, floatBuffer.remaining() / FLOATS_PER_POINT);
+		shader.setUniform("u_Color", Color.WHITE, Color.WHITE, Color.WHITE, 0.5f);
+		Renderer.draw(shader, GLES20.GL_TRIANGLES, 0, floatBuffer.remaining() / FLOATS_PER_POINT);
 		shader.freeAtrib(vertexBuffer, "a_Position");
 	}
 	
@@ -66,9 +69,22 @@ public class MainRenderer {
 		vertexBuffer.fillData(floatBuffer);
 		shader.setAttrib(vertexBuffer, "a_Position", 4, GLES20.GL_FLOAT, false, BYTES_PER_POINT, 0);
 		shader.setUniform("u_Color", color.red(), color.green(), color.blue(), color.alpha());
+		shader.setUniform("tmp", -10.0f);
 		shader.setUniform("u_ModelViewProjection", 1, false, modelViewProjection, 0);
 		shader.setUniform("u_PointSize", pointSize);
-		com.example.arteam2.GL.Renderer.draw(shader, GLES20.GL_POINTS, 0, floatBuffer.remaining() / FLOATS_PER_POINT);
+		Renderer.draw(shader, GLES20.GL_POINTS, 0, floatBuffer.remaining() / FLOATS_PER_POINT);
+		shader.freeAtrib(vertexBuffer, "a_Position");
+	}
+	
+	@RequiresApi(api = Build.VERSION_CODES.O)
+	public void debugDraw(FloatBuffer floatBuffer, float[] modelViewProjection, Color color, float pointSize) {
+		vertexBuffer.fillData(floatBuffer);
+		shader.setAttrib(vertexBuffer, "a_Position", 4, GLES20.GL_FLOAT, false, BYTES_PER_POINT, 0);
+		shader.setUniform("u_Color", color.red(), color.green(), color.blue(), color.alpha());
+//		shader.setUniform("u_ModelViewProjection", 1, false, modelViewProjection, 0);
+		shader.setUniform("tmp", -1.0f);
+		shader.setUniform("u_PointSize", pointSize);
+		Renderer.draw(shader, GLES20.GL_POINTS, 0, floatBuffer.remaining() / FLOATS_PER_POINT);
 		shader.freeAtrib(vertexBuffer, "a_Position");
 	}
 	
@@ -79,7 +95,7 @@ public class MainRenderer {
 		shader.setUniform("u_Color", color.red(), color.green(), color.blue(), 0.5f);
 		shader.setUniform("u_ModelViewProjection", 1, false, modelViewProjection, 0);
 		shader.setUniform("u_PointSize", -1.0f);
-		com.example.arteam2.GL.Renderer.blendDraw(shader, GLES20.GL_TRIANGLES, 0, floatBuffer.remaining() / FLOATS_PER_POINT);
+		Renderer.blendDraw(shader, GLES20.GL_TRIANGLES, 0, floatBuffer.remaining() / FLOATS_PER_POINT);
 		shader.freeAtrib(vertexBuffer, "a_Position");
 	}
 }

@@ -3,6 +3,15 @@ package com.example.arteam2.Utility;
 public class Math {
 	private static final String TAG = Math.class.getName();
 	
+	static public float[] matTimesVec(float[] mat, float[] vec) {
+		float[] ret = new float[4];
+		ret[0] = mat[(4 * 0) + 0] * vec[0] + mat[(4 * 0) + 1] * vec[1] + mat[(4 * 0) + 2] * vec[2] + mat[(4 * 0) + 3] * vec[3];
+		ret[1] = mat[(4 * 1) + 0] * vec[0] + mat[(4 * 1) + 1] * vec[1] + mat[(4 * 1) + 2] * vec[2] + mat[(4 * 1) + 3] * vec[3];
+		ret[2] = mat[(4 * 2) + 0] * vec[0] + mat[(4 * 2) + 1] * vec[1] + mat[(4 * 2) + 2] * vec[2] + mat[(4 * 2) + 3] * vec[3];
+		ret[3] = mat[(4 * 3) + 0] * vec[0] + mat[(4 * 3) + 1] * vec[1] + mat[(4 * 3) + 2] * vec[2] + mat[(4 * 3) + 3] * vec[3];
+		return ret;
+	}
+	
 	static public float lengthBetween(float[] a, float[] b) {
 		float ans = 0;
 		ans += (a[0] - b[0]) * (a[0] - b[0]);

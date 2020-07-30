@@ -12,4 +12,6 @@ public enum Bust {
 	FindingOrthoFloor,
 	FoundOrthoFloor,
 	FailedFindOrthoFloor,
+	
+	DebugMode,
 }
