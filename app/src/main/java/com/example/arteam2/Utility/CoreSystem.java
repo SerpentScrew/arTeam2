@@ -11,6 +11,8 @@ import com.example.arteam2.R;
 import com.google.ar.core.Camera;
 
 import java.nio.FloatBuffer;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -84,6 +86,22 @@ public class CoreSystem {
 				pointHandler.findFloorEnd();
 			} catch (Exception e) {
 				Log.d("Plane", e.getMessage());
+			}
+		}
+	}
+	
+	static public void makePointSet(HashMap<Integer, float[]> tempMap, Map<Integer, float[]> pointSet, ArrayList<Integer> visitedID, int ID, float[] point) {
+		if (visitedID.contains(ID)) return;
+		
+		visitedID.add(ID);
+		pointSet.put(ID, point);
+		
+		for (int mapID : tempMap.keySet()) {
+			float[] newPoint = tempMap.get(mapID);
+			if (newPoint == null) continue;
+			
+			if (Math.lengthBetween(point, newPoint) <= 0.1f) {
+				makePointSet(tempMap, pointSet, visitedID, mapID, newPoint);
 			}
 		}
 	}

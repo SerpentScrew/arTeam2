@@ -258,6 +258,29 @@ public class PointHandler {
 			return;
 		}
 		
+		ArrayList<Map<Integer, float[]>> arrOfArr = new ArrayList<>();
+		ArrayList<Integer> visitedID = new ArrayList<>();
+		
+		for (int ID : tempMap.keySet()) {
+			float[] tmp = tempMap.get(ID);
+			if (tmp == null) continue;
+			Map<Integer, float[]> tmpMap = new HashMap<>();
+			CoreSystem.makePointSet(tempMap, tmpMap, visitedID, ID, tmp);
+			if (tmpMap.isEmpty()) continue;
+			arrOfArr.add(tmpMap);
+		}
+		
+		int maxSize = 0;
+		Map<Integer, float[]> maxArr = null;
+		for (Map<Integer, float[]> tmp : arrOfArr) {
+			if (maxSize == 0) maxArr = tmp;
+			if (maxSize < tmp.size()) {
+				maxSize = tmp.size();
+				maxArr = tmp;
+			}
+		}
+		
+		/*
 		// TODO : 일단 자꾸 request fail 해서 정규분포라 가정하고 신뢰구간 이용해서 땅 찾음
 		// TODO : 그 평면의 점들이 울퉁불퉁한거 없으면 Request 안된다 함
 		float[] avg = CoreSystem.avgOfPointMap(tempMap);
@@ -274,10 +297,13 @@ public class PointHandler {
 		if (projectedPoints.isEmpty()) {
 			Log.d(this.getClass().getName(), "orThoObject: something wrong with projectedPoints");
 		}
-		
-		orThoedBuffer = GLSupport.makeFloatBuffer(projectedPoints);
-		
-		planeObject = CoreSystem.findLeastPlane(projectedPoints, avg, plane);
+		*/
+
+//		orThoedBuffer = GLSupport.makeFloatBuffer(projectedPoints);
+		orThoedBuffer = GLSupport.makeFloatBuffer(maxArr);
+
+//		planeObject = CoreSystem.findLeastPlane(projectedPoints, avg, plane);
+		planeObject = CoreSystem.findLeastPlane(maxArr, CoreSystem.avgOfPointMap(maxArr), plane);
 		
 		if (pointForDrawingPlane2 == null) {
 			pointForDrawingPlane2 = new float[]{
@@ -291,30 +317,6 @@ public class PointHandler {
 		}
 		isGenerated = true;
 	}
-//
-//	public void deleteFloor() {
-//		if (objectPoints == null) objectPoints = new HashMap<>();
-//		if (deletedPoints == null) deletedPoints = new HashMap<>();
-//
-//		float a = plane.getNormal()[0], b = plane.getNormal()[1], c = plane.getNormal()[2];
-//		float d = plane.getDVal();
-//
-//		for (int id : filteredPoints.keySet()) {
-//			float[] point = filteredPoints.get(id);
-//			if (point == null) continue;
-//			double distance =
-//					((a * point[0]) + (b * point[1]) + (c * point[2]) + d)
-//					/ java.lang.Math.sqrt((a * a) + (b * b) + (c * c));
-//
-//			if (java.lang.Math.sqrt(distance) > EPSILON) {
-//				objectPoints.put(id, point);
-//				continue;
-//			}
-//			deletedPoints.put(id, point);
-//		}
-//
-//		isDeleted = true;
-//	}
 	
 	public void deleteFloor() {
 		float[] vec1 = Math.sub(plane.getlr(), plane.getll());
