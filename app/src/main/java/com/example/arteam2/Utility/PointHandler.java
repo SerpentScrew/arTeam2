@@ -27,7 +27,7 @@ import java.util.Objects;
 public class PointHandler {
 	public final int REQUIRED_POINTS = 2000;
 	public final float FINE_CONFIDENCE = 0.3f;
-	final float EPSILON = 0.15f;
+	public final float epsilon = 0.05f;
 	
 	private Map<Integer, ArrayList<float[]>> allPoints = null;
 	private Map<Integer, float[]> filteredPoints;
@@ -331,7 +331,7 @@ public class PointHandler {
 		
 		if (objectPoints == null) objectPoints = new HashMap<>();
 		if (deletedPoints == null) deletedPoints = new HashMap<>();
-		final float epsilon = 0.10f;
+
 		
 		for (int id : filteredPoints.keySet()) {
 			float[] point = filteredPoints.get(id);
