@@ -26,6 +26,7 @@
         android:id="@+id/camera"
         android:layout_width="125dp"
         android:layout_height="125dp"
+        android:layout_marginTop="10dp"
         android:layout_marginBottom="400dp"
         android:background="?attr/selectableItemBackground"
         android:scaleType="centerInside"
@@ -78,11 +79,11 @@
     <TextView
         android:id="@+id/currentStandard"
         android:layout_width="match_parent"
-        android:layout_height="30dp"
-        android:layout_marginBottom="30dp"
-        android:autoSizeTextType="uniform"
+        android:layout_height="60dp"
+        android:layout_marginBottom="60dp"
+        android:textSize = "20dp"
         android:gravity="center_horizontal"
-        android:text="대한항공     50 x 40 x 20"
+        android:text="설정에서 항공사를 정해주세요"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
