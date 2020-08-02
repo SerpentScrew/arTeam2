@@ -17,6 +17,8 @@ import java.util.Map;
 import java.util.Objects;
 
 public class CoreSystem {
+	static final float LEAST_LEN_BTW_POINTS = 0.10f;
+	
 	static public class FindFloor extends AsyncTask<Object, ResponseForm.PlaneParam, ResponseForm.PlaneParam> {
 		private static final String REQUEST_URL = "https://developers.curvsurf.com/FindSurface/plane"; // Plane searching server address
 		private PointHandler pointHandler = null;
@@ -32,8 +34,6 @@ public class CoreSystem {
 		
 		@Override
 		protected ResponseForm.PlaneParam doInBackground(Object[] objects) {
-			System.out.println("doinbackgrounds~~");
-			
 			// Ready Point Cloud
 			FloatBuffer points = pointHandler.getFilteredBuffer().duplicate();
 			
@@ -100,7 +100,7 @@ public class CoreSystem {
 			float[] newPoint = tempMap.get(mapID);
 			if (newPoint == null) continue;
 			
-			if (Math.lengthBetween(point, newPoint) <= 0.1f) {
+			if (Math.lengthBetween(point, newPoint) <= LEAST_LEN_BTW_POINTS) {
 				makePointSet(tempMap, pointSet, visitedID, mapID, newPoint);
 			}
 		}
@@ -245,6 +245,33 @@ public class CoreSystem {
 	static public Plane findLeastPlane(Map<Integer, float[]> map, float[] avg, Plane plane) {
 		
 		if (map == null || avg == null) return null;
+		
+		// new one
+		float[] first = null;
+		float[] secnd = null;
+		float length = Float.MIN_VALUE;
+		
+		for (int leftID : map.keySet()) {
+			if (map.get(leftID) == null) continue;
+			for (int rightID : map.keySet()) {
+				if (leftID == rightID) continue;
+				if (map.get(rightID) == null) continue;
+				
+				float distBtwLR = Math.lengthBetween(Objects.requireNonNull(map.get(leftID)), Objects.requireNonNull(map.get(rightID)));
+				if (length < distBtwLR) {
+					length = distBtwLR;
+					first = map.get(leftID);
+					secnd = map.get(rightID);
+				}
+			}
+		}
+		
+		if (first == null || secnd == null) return null;
+		
+		avg[0] = (first[0] + secnd[0]) / 2;
+		avg[1] = (first[1] + secnd[1]) / 2;
+		avg[2] = (first[2] + secnd[2]) / 2;
+		// new one end
 		
 		float[] farthestPoint = CoreSystem.farthestPointFromAvg(map, avg);
 		float[] ur = new float[]{

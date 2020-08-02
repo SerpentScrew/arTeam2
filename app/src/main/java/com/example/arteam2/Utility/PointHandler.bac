@@ -27,7 +27,7 @@ import java.util.Objects;
 public class PointHandler {
 	public final int REQUIRED_POINTS = 2000;
 	public final float FINE_CONFIDENCE = 0.3f;
-	final float EPSILON = 0.05f;
+	final float EPSILON = 0.10f;
 	
 	private Map<Integer, ArrayList<float[]>> allPoints = null;
 	private Map<Integer, float[]> filteredPoints;
