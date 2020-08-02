@@ -11,7 +11,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
         <TextView
-            android:text="Notice"
+            android:text="기내 허용 수하물 크기"
             android:textSize="20sp"
             android:textColor="#000000"
 

@@ -45,7 +45,7 @@ public class ResultActivity extends Activity {
         //data[1] == width;
         //data[0] == length
 
-        result.setText("결과 : " + (int)data[2] + " x " + (int)data[1] + " x " + (int)data[0] + " cm");
+        result.setText("측정 결과 : " + (int)data[2] + " x " + (int)data[1] + " x " + (int)data[0] + " cm");
         standard.setText("기준 : " + (int)mainActivity.getSize()[0] + " x " + (int)mainActivity.getSize()[1] + " x " + (int)mainActivity.getSize()[2] + " cm");
 
         if(data[2] < mainActivity.getSize()[0] && data[1] < mainActivity.getSize()[1] && data[0] < mainActivity.getSize()[2]) {
@@ -53,7 +53,7 @@ public class ResultActivity extends Activity {
         }
         else
         {
-            pass.setText("커요!");
+            pass.setText("너무 커요!");
         }
 
     }
