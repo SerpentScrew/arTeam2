@@ -645,4 +645,8 @@ public class PointHandler {
 	public int getSeedPointID() {
 		return seedPointID;
 	}
+
+	public Plane getPlaneObject() {
+		return planeObject;
+	}
 }
